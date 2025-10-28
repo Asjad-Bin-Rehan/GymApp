@@ -5,6 +5,7 @@ namespace BS.Services.InspectionAttributeService
     public interface IInspectionAttributeService
     {
         Task<bool> AddInspectionAttribute(AddInspectionAttributeDTO request, string userId, CancellationToken ct);
+        Task<bool> AddInspectionAttributeRaw(AddInspectionAttributeDTO request, string userId, CancellationToken ct);
         Task<List<ResponseInspectionAttribute>> ListAllInspectionAttributesRaw(CancellationToken ct);
         Task<List<ResponseInspectionAttribute>> ListAllInspectionAttributes(int lastCount, int skipRecords, CancellationToken ct);
         Task<ResponseInspectionAttribute> GetInspectionAttributeById(string id, CancellationToken ct);

@@ -52,7 +52,7 @@ namespace CSAPI.Feature.InspectionAttributeFeature
             var message = "Success";
             try
             {
-                var result = await svc.AddInspectionAttribute(request, user.Data.UserId ?? "Anonymous", ct);
+                var result = await svc.AddInspectionAttributeRaw(request, user.Data.UserId ?? "Anonymous", ct);
                 return ApiResponseHelper.Convert(true, true, message, statusCode, result);
             }
             catch (Exception ex)

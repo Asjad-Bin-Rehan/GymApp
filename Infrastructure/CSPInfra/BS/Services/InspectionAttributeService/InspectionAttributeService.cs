@@ -3,6 +3,7 @@ using DA;
 using DA.AppDbContexts;
 using Helpers.CustomExceptionThrower;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace BS.Services.InspectionAttributeService
 {
@@ -32,6 +33,34 @@ namespace BS.Services.InspectionAttributeService
 
             return result;
         }
+
+        public async Task<bool> AddInspectionAttributeRaw(AddInspectionAttributeDTO request, string userId, CancellationToken ct)
+        {
+            var sqlQuery = @"
+                            INSERT INTO public.""Inspection_Attribute"" 
+                            (""Id"", ""Name"", ""Description"", ""Tag"", ""CreatedBy"", ""CreatedDate"", ""UpdatedBy"", ""UpdatedDate"", ""IsActive"", ""IsArchived"")
+                            VALUES 
+                            (@Id, @Name, @Description, @Tag, @CreatedBy, @CreatedDate, @UpdatedBy, @UpdatedDate, @IsActive, @IsArchived)
+                            ";
+
+            var parameters = new[]
+            {
+                new NpgsqlParameter("@Id", Guid.NewGuid().ToString() ?? (object)DBNull.Value),
+                new NpgsqlParameter("@Name", request.Name ?? (object)DBNull.Value),
+                new NpgsqlParameter("@Description", request.Description ?? (object)DBNull.Value),
+                new NpgsqlParameter("@Tag", request.Tag ?? (object)DBNull.Value),
+                new NpgsqlParameter("@CreatedBy", userId),
+                new NpgsqlParameter("@CreatedDate", DateTime.UtcNow),
+                new NpgsqlParameter("@UpdatedBy", userId),
+                new NpgsqlParameter("@UpdatedDate", DateTime.UtcNow),
+                new NpgsqlParameter("@IsActive", true),
+                new NpgsqlParameter("@IsArchived", false)
+            };
+
+            await _dbContext.Database.ExecuteSqlRawAsync(sqlQuery, parameters, ct);
+            return true;
+        }
+
 
         public async Task<bool> AddInspectionAttribute(AddInspectionAttributeDTO request, string userId, CancellationToken ct)
         {
