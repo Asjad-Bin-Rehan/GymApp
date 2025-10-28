@@ -20,8 +20,6 @@ namespace GenericRepository
             _dbSet = _db.Set<TEntity>();
         }
 
-       
-
         public virtual SetterResult Add(TEntity entity, string createdBy)
         {
             try

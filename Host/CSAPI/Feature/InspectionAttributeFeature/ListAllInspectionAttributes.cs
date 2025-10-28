@@ -24,7 +24,7 @@ namespace CSAPI.Feature.InspectionAttributeFeature
             string message = "Success";
             try
             {
-                var result = await svc.ListAllInspectionAttributes(lastCount ?? int.MaxValue, skipRecords ?? 0, ct);
+                var result = await svc.ListAllInspectionAttributesRaw(ct);
                 return ApiResponseHelper.Convert(true, true, message, statusCode, result);
             }
             catch (ArgumentException e)

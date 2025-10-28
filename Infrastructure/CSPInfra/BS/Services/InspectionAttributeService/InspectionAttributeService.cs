@@ -1,5 +1,6 @@
 ﻿using BS.Services.InspectionAttributeService.DTOs;
 using DA;
+using DA.AppDbContexts;
 using Helpers.CustomExceptionThrower;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,28 @@ namespace BS.Services.InspectionAttributeService
     public class InspectionAttributeService : IInspectionAttributeService
     {
         private readonly IUnitOfWork _uow;
-
-        public InspectionAttributeService(IUnitOfWork uow)
+        private AppDbContext _dbContext;
+        public InspectionAttributeService(IUnitOfWork uow, AppDbContext dbContext)
         {
             _uow = uow;
+            _dbContext = dbContext;
+        }
+
+        public async Task<List<ResponseInspectionAttribute>> ListAllInspectionAttributesRaw(CancellationToken ct)
+        {
+            var sqlQuery = @"
+                            SELECT ""Id"", ""IntCode"", ""Name"", ""Description"", ""Tag"", ""CreatedBy"", ""UpdatedBy"", ""CreatedDate"", ""UpdatedDate"", ""IsActive"", ""IsArchived""
+                            FROM public.""Inspection_Attribute""
+                            WHERE ""IsActive"" = true
+                            ORDER BY ""Name"";
+                            ";
+
+            var result = await _dbContext
+                                 .Database
+                                 .SqlQueryRaw<ResponseInspectionAttribute>(sqlQuery)
+                                 .ToListAsync(ct);
+
+            return result;
         }
 
         public async Task<bool> AddInspectionAttribute(AddInspectionAttributeDTO request, string userId, CancellationToken ct)
