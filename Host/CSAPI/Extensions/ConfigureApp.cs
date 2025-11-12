@@ -25,7 +25,7 @@ namespace CSAPI.Extensions
             //app.UseAuthorization();
             app.MapEndpointsExposed();
             app.MapEndpoints();
-            await app.EnsureDatabaseCreated();
+            //await app.EnsureDatabaseCreated();
             app.UseCors(x => x
               .AllowAnyOrigin()
               .AllowAnyMethod()
