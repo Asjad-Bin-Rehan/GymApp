@@ -228,6 +228,22 @@ public static class Endpoints
         ;
     }
 
+    private static void MapUserEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IUserFeature)}").WithTags("IUserFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<SignupUser>()
+            .MapEndpoint<LoginUser>()
+            .MapEndpoint<GetUserById>()
+            .MapEndpoint<ListAllUsers>()
+            .MapEndpoint<AddUserRaw>()      // Admin Add
+            .MapEndpoint<DeleteUser>();     // Delete
+    }
+
+
+
+
     private static void MapUnitOfMeasureEndpoints(this IEndpointRouteBuilder app)
     {
         var endpoints = app.MapGroup($"/{nameof(IUnitOfMeasureFeature)}").WithTags("IUnitOfMeasureFeature");
