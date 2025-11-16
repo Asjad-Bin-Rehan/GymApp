@@ -1,26 +1,29 @@
-﻿using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using CSAPI.Common;
+using CSAPI.Common.Auth;
 using CSAPI.Common.Constant;
 using CSAPI.Common.Filters;
-using CSAPI.Common.Auth;
-using CSAPI.Common;
-using CSAPI.Feature.QualitativeResultFeature;
-using CSAPI.Feature.UnitOfMeasureFeature;
-using CSAPI.Feature.InspectionCharacteristicFeature;
-using CSAPI.Feature.NextIntCodeFeature;
-using CSAPI.Feature.ItemCardFeature;
-using CSAPI.Feature.InspectionCardFeature;
-using CSAPI.Feature.ItemSampleFeature;
-using CSAPI.Feature.ItemInspectionCardFeature;
-using CSAPI.Feature.PurchaseQCFeature;
-using CSAPI.Feature.ProductionQCFeature;
-using CSAPI.Feature.ProductionQAFeature;
-using CSAPI.Feature.PurchaseQCSampleFeature;
-using CSAPI.Feature.ProductionQCSampleFeature;
-using CSAPI.Feature.ProductionQACavityFeature;
-using CSAPI.Feature.ProductionQACavitySampleFeature;
 using CSAPI.Feature.AuthMonolithicFeature;
 using CSAPI.Feature.InspectionAttributeFeature;
+using CSAPI.Feature.InspectionCardFeature;
+using CSAPI.Feature.InspectionCharacteristicFeature;
+using CSAPI.Feature.ItemCardFeature;
+using CSAPI.Feature.ItemInspectionCardFeature;
+using CSAPI.Feature.ItemSampleFeature;
+using CSAPI.Feature.LocationFeature;
+using CSAPI.Feature.NextIntCodeFeature;
+using CSAPI.Feature.PartnerGym;
+using CSAPI.Feature.ProductionQACavityFeature;
+using CSAPI.Feature.ProductionQACavitySampleFeature;
+using CSAPI.Feature.ProductionQAFeature;
+using CSAPI.Feature.ProductionQCFeature;
+using CSAPI.Feature.ProductionQCSampleFeature;
+using CSAPI.Feature.PurchaseQCFeature;
+using CSAPI.Feature.PurchaseQCSampleFeature;
+using CSAPI.Feature.QualitativeResultFeature;
+using CSAPI.Feature.UnitOfMeasureFeature;
+using CSAPI.Feature.UserFeature;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.OpenApi.Models;
 
 namespace CSAPI;
 
@@ -29,6 +32,12 @@ public static class Endpoints
     public static void MapEndpoints(this WebApplication app)
     {
         var endpoints = app.MapGroup(KConstant.ApiName).AddEndpointFilter<RequestLoggingFilter>().WithOpenApi();
+
+
+        endpoints.MapUserEndpoints();
+        endpoints.MapPartnerGymEndpoints();
+        endpoints.MapLocationEndpoints();
+
 
         // Auto-Increment Code & Paginate
         endpoints.MapAuthEndpoints();
@@ -240,6 +249,31 @@ public static class Endpoints
             .MapEndpoint<AddUserRaw>()      // Admin Add
             .MapEndpoint<DeleteUser>();     // Delete
     }
+
+    private static void MapPartnerGymEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IPartnerGymFeature)}").WithTags("IPartnerGymFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<AddPartnerGym>()
+            .MapEndpoint<AddPartnerGymWithLocation>()
+            .MapEndpoint<GetPartnerGymById>()
+            .MapEndpoint<ListPartnerGyms>()
+            .MapEndpoint<UpdatePartnerGym>()
+            .MapEndpoint<DeletePartnerGym>();
+    }
+
+    private static void MapLocationEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ILocationFeature)}").WithTags("ILocationFeature");
+
+        endpoints.MapEndpoint<AddLocation>();
+        endpoints.MapEndpoint<GetLocationById>();
+        endpoints.MapEndpoint<ListAllLocations>();
+        endpoints.MapEndpoint<UpdateLocation>();
+        endpoints.MapEndpoint<DeleteLocation>();
+    }
+
 
 
 

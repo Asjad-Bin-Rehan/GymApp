@@ -23,15 +23,15 @@ namespace CSAPI.Feature.UserFeature
         {
             public RequestValidator()
             {
-                RuleFor(x => x.UserId).GreaterThan(0).WithMessage("UserId must be greater than 0.");
-                RuleFor(x => x.FullName).NotEmpty().When(x => x.FullName != null).WithMessage("FullName cannot be empty.");
-                RuleFor(x => x.Email).EmailAddress().When(x => x.Email != null).WithMessage("Invalid email format.");
+                RuleFor(x => x.user_id).GreaterThan(0).WithMessage("UserId must be greater than 0.");
+                RuleFor(x => x.full_name).NotEmpty().When(x => x.full_name != null).WithMessage("FullName cannot be empty.");
+                RuleFor(x => x.email).EmailAddress().When(x => x.email != null).WithMessage("Invalid email format.");
             }
         }
 
         private static async Task<IResult> Handle(
             [FromBody] UpdateUserDTO request,
-            IUserServiceRaw svc,
+            IUserService svc,
             ICustomLogger logger,
             CancellationToken ct)
         {

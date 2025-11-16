@@ -2,12 +2,12 @@
 {
     public class UpdateUserDTO
     {
-        public int UserId { get; set; }                // Required for update
-        public string? Username { get; set; }          // Optional
-        public string? FullName { get; set; }          // Optional
-        public string? Email { get; set; }             // Optional
-        public string? Phone { get; set; }             // Optional
-        public string? MembershipId { get; set; }      // Optional
-        public string? Status { get; set; }            // Optional: Active, Inactive, Expired
+        public int user_id { get; set; }                // Required for update
+        public string? username { get; set; }          // Optional
+        public string? full_name { get; set; }         // Optional
+        public string? email { get; set; }             // Optional
+        public string? phone { get; set; }             // Optional
+        public string? membership_id { get; set; }     // Optional
+        public string? status { get; set; }            // Optional: Active, Inactive, Expired
     }
 }

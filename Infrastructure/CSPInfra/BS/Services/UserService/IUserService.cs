@@ -2,13 +2,15 @@
 
 namespace BS.Services.UserService
 {
-    public interface IUserServiceRaw
+    public interface IUserService
     {
         // Create (RAW)
         Task<bool> AddUserRaw(AddUserDTO request, CancellationToken ct);
 
         // Read / List / Get (RAW)
         Task<ResponseUserDTO?> GetUserByIdRaw(int userId, CancellationToken ct);
+
+        Task<ResponseUserDTO?> GetUserByIdRawWithManualMapping(int userId, CancellationToken ct);
         Task<List<ResponseUserDTO>> ListAllUsersRaw(int limit, int offset, CancellationToken ct);
 
         // Update (RAW)

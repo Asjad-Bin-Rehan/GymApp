@@ -1,19 +1,21 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BS.Services.UserService.DTOs;
+using DA.AppDbContexts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
-using BS.Services.UserService.DTOs;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 namespace BS.Services.UserService
 {
-    public class UserService : IUserServiceRaw
+    public class UserService : IUserService
     {
-        private readonly GymverseDbContext _dbContext;
+        private readonly AppDbContext _dbContext;
         private readonly IConfiguration _configuration;
 
-        public UserService(GymverseDbContext dbContext, IConfiguration configuration)
+        public UserService(AppDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
             _configuration = configuration;
@@ -24,35 +26,35 @@ namespace BS.Services.UserService
         // ============================================================
         public async Task<bool> AddUserRaw(AddUserDTO request, CancellationToken ct)
         {
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.password);
 
             var sqlQuery = @"
-                INSERT INTO public.""Users""
+                INSERT INTO public.users
                 (
-                    ""username"", ""password_hash"", ""full_name"", ""email"",
-                    ""phone"", ""date_of_birth"", ""join_date"", ""membership_id"",
-                    ""status"", ""total_points""
+                    username, password_hash, full_name, email,
+                    phone, date_of_birth, join_date, membership_id,
+                    status, total_points
                 )
                 VALUES
                 (
-                    @Username, @PasswordHash, @FullName, @Email,
-                    @Phone, @DateOfBirth, @JoinDate, @MembershipId,
-                    @Status, @TotalPoints
+                    @username, @passwordHash, @full_name, @email,
+                    @phone, @date_of_birth, @join_date, @membership_id,
+                    @status, @total_points
                 );
             ";
 
             var parameters = new[]
             {
-                new NpgsqlParameter("@Username", request.Username ?? (object)DBNull.Value),
-                new NpgsqlParameter("@PasswordHash", passwordHash),
-                new NpgsqlParameter("@FullName", request.FullName ?? (object)DBNull.Value),
-                new NpgsqlParameter("@Email", request.Email ?? (object)DBNull.Value),
-                new NpgsqlParameter("@Phone", request.Phone ?? (object)DBNull.Value),
-                new NpgsqlParameter("@DateOfBirth", request.DateOfBirth ?? (object)DBNull.Value),
-                new NpgsqlParameter("@JoinDate", DateTime.UtcNow),
-                new NpgsqlParameter("@MembershipId", request.MembershipId ?? (object)DBNull.Value),
-                new NpgsqlParameter("@Status", request.Status ?? "Active"),
-                new NpgsqlParameter("@TotalPoints", request.TotalPoints)
+                new NpgsqlParameter("@username", request.username ?? (object)DBNull.Value),
+                new NpgsqlParameter("@passwordHash", passwordHash),
+                new NpgsqlParameter("@full_name", request.full_name ?? (object)DBNull.Value),
+                new NpgsqlParameter("@email", request.email ?? (object)DBNull.Value),
+                new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value),
+                new NpgsqlParameter("@date_of_birth", request.date_of_birth ?? (object)DBNull.Value),
+                new NpgsqlParameter("@join_date", DateTime.UtcNow),
+                new NpgsqlParameter("@membership_id", request.membership_id ?? (object)DBNull.Value),
+                new NpgsqlParameter("@status", request.status ?? "Active"),
+                new NpgsqlParameter("@total_points", request.total_points)
             };
 
             await _dbContext.Database.ExecuteSqlRawAsync(sqlQuery, parameters, ct);
@@ -66,10 +68,11 @@ namespace BS.Services.UserService
         {
             var sqlQuery = @"
                 SELECT 
-                    ""user_id"", ""username"", ""password_hash"", ""full_name"", ""email"", 
-                    ""phone"", ""status"", ""membership_id"", ""total_points""
-                FROM public.""Users""
-                WHERE ""username"" = @UsernameOrEmail OR ""email"" = @UsernameOrEmail;
+                    user_id, username, password_hash, full_name, email,
+                    phone, status, membership_id, total_points,
+                    date_of_birth, join_date
+                FROM public.users
+                WHERE username = @username_or_email OR email = @username_or_email;
             ";
 
             await using var conn = _dbContext.Database.GetDbConnection();
@@ -77,30 +80,27 @@ namespace BS.Services.UserService
 
             await using var cmd = conn.CreateCommand();
             cmd.CommandText = sqlQuery;
-            cmd.Parameters.Add(new NpgsqlParameter("@UsernameOrEmail", request.UsernameOrEmail));
+            cmd.Parameters.Add(new NpgsqlParameter("@username_or_email", request.username_or_email));
 
             await using var reader = await cmd.ExecuteReaderAsync(ct);
             if (!await reader.ReadAsync(ct)) return null;
 
             var passwordHash = reader.GetString(reader.GetOrdinal("password_hash"));
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, passwordHash)) return null;
+            if (!BCrypt.Net.BCrypt.Verify(request.password, passwordHash)) return null;
 
-            var user = new ResponseUserDTO
+            return new ResponseUserDTO
             {
-                UserId = reader.GetInt32(reader.GetOrdinal("user_id")),
-                Username = reader.GetString(reader.GetOrdinal("username")),
-                FullName = reader.GetString(reader.GetOrdinal("full_name")),
-                Email = reader.GetString(reader.GetOrdinal("email")),
-                Phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
-                Status = reader.GetString(reader.GetOrdinal("status")),
-                MembershipId = reader.IsDBNull(reader.GetOrdinal("membership_id")) ? null : reader.GetString(reader.GetOrdinal("membership_id")),
-                TotalPoints = reader.GetInt32(reader.GetOrdinal("total_points"))
+                user_id = reader.GetInt32(reader.GetOrdinal("user_id")),
+                username = reader.GetString(reader.GetOrdinal("username")),
+                full_name = reader.GetString(reader.GetOrdinal("full_name")),
+                email = reader.GetString(reader.GetOrdinal("email")),
+                phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
+                status = reader.GetString(reader.GetOrdinal("status")),
+                membership_id = reader.IsDBNull(reader.GetOrdinal("membership_id")) ? null : reader.GetString(reader.GetOrdinal("membership_id")),
+                total_points = reader.GetInt32(reader.GetOrdinal("total_points")),
+                date_of_birth = reader.IsDBNull(reader.GetOrdinal("date_of_birth")) ? null : reader.GetDateTime(reader.GetOrdinal("date_of_birth")),
+                join_date = reader.GetDateTime(reader.GetOrdinal("join_date"))
             };
-
-            // Generate JWT
-            //user.Token = GenerateJwtToken(user.UserId, user.Username);
-
-            return user;
         }
 
         private string GenerateJwtToken(int userId, string username)
@@ -133,26 +133,60 @@ namespace BS.Services.UserService
         {
             var sqlQuery = @"
                 SELECT 
-                    ""user_id"" AS ""UserId"",
-                    ""username"" AS ""Username"",
-                    ""full_name"" AS ""FullName"",
-                    ""email"" AS ""Email"",
-                    ""phone"" AS ""Phone"",
-                    ""date_of_birth"" AS ""DateOfBirth"",
-                    ""join_date"" AS ""JoinDate"",
-                    ""membership_id"" AS ""MembershipId"",
-                    ""status"" AS ""Status"",
-                    ""total_points"" AS ""TotalPoints""
-                FROM public.""Users""
-                WHERE ""user_id"" = @UserId;
+                    user_id, username, full_name, email,
+                    phone, date_of_birth, join_date,
+                    membership_id, status, total_points
+                FROM public.users
+                WHERE user_id = @user_id
             ";
 
-            var parameter = new NpgsqlParameter("@UserId", userId);
+            var parameter = new NpgsqlParameter("@user_id", userId);
 
-            return await _dbContext.ResponseUserDTOs
-                .FromSqlRaw(sqlQuery, parameter)
-                .FirstOrDefaultAsync(ct);
+            var result = await _dbContext
+                                .Database
+                                .SqlQueryRaw<ResponseUserDTO>(sqlQuery, parameter)
+                                .FirstOrDefaultAsync(ct);
+
+            return result;
         }
+
+
+        public async Task<ResponseUserDTO?> GetUserByIdRawWithManualMapping(int userId, CancellationToken ct)
+        {
+            var sqlQuery = @"
+        SELECT 
+            user_id, username, full_name, email,
+            phone, date_of_birth, join_date,
+            membership_id, status, total_points
+        FROM public.users
+        WHERE user_id = @user_id;
+    ";
+
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sqlQuery;
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", userId));
+
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct)) return null;
+
+            return new ResponseUserDTO
+            {
+                user_id = reader.GetInt32(reader.GetOrdinal("user_id")),
+                username = reader.GetString(reader.GetOrdinal("username")),
+                full_name = reader.GetString(reader.GetOrdinal("full_name")),
+                email = reader.GetString(reader.GetOrdinal("email")),
+                phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
+                date_of_birth = reader.IsDBNull(reader.GetOrdinal("date_of_birth")) ? null : reader.GetDateTime(reader.GetOrdinal("date_of_birth")),
+                join_date = reader.GetDateTime(reader.GetOrdinal("join_date")),
+                membership_id = reader.IsDBNull(reader.GetOrdinal("membership_id")) ? null : reader.GetString(reader.GetOrdinal("membership_id")),
+                status = reader.GetString(reader.GetOrdinal("status")),
+                total_points = reader.GetInt32(reader.GetOrdinal("total_points"))
+            };
+        }
+
 
         // ============================================================
         // LIST USERS
@@ -161,18 +195,11 @@ namespace BS.Services.UserService
         {
             var sqlQuery = @"
                 SELECT 
-                    ""user_id"" AS ""UserId"",
-                    ""username"" AS ""Username"",
-                    ""full_name"" AS ""FullName"",
-                    ""email"" AS ""Email"",
-                    ""phone"" AS ""Phone"",
-                    ""date_of_birth"" AS ""DateOfBirth"",
-                    ""join_date"" AS ""JoinDate"",
-                    ""membership_id"" AS ""MembershipId"",
-                    ""status"" AS ""Status"",
-                    ""total_points"" AS ""TotalPoints""
-                FROM public.""Users""
-                ORDER BY ""user_id""
+                    user_id, username, full_name, email,
+                    phone, date_of_birth, join_date,
+                    membership_id, status, total_points
+                FROM public.users
+                ORDER BY user_id
                 LIMIT @Limit OFFSET @Offset;
             ";
 
@@ -182,9 +209,12 @@ namespace BS.Services.UserService
                 new NpgsqlParameter("@Offset", offset)
             };
 
-            return await _dbContext.ResponseUserDTOs
-                .FromSqlRaw(sqlQuery, parameters)
-                .ToListAsync(ct);
+            var users = await _dbContext
+                            .Database
+                            .SqlQueryRaw<ResponseUserDTO>(sqlQuery, parameters)
+                            .ToListAsync(ct);
+
+            return users;
         }
 
         // ============================================================
@@ -193,24 +223,24 @@ namespace BS.Services.UserService
         public async Task<bool> UpdateUserRaw(UpdateUserDTO request, CancellationToken ct)
         {
             var sqlQuery = @"
-                UPDATE public.""Users""
+                UPDATE public.users
                 SET
-                    ""full_name"" = COALESCE(@FullName, ""full_name""),
-                    ""email"" = COALESCE(@Email, ""email""),
-                    ""phone"" = COALESCE(@Phone, ""phone""),
-                    ""status"" = COALESCE(@Status, ""status""),
-                    ""membership_id"" = COALESCE(@MembershipId, ""membership_id"")
-                WHERE ""user_id"" = @UserId;
+                    full_name = COALESCE(@full_name, full_name),
+                    email = COALESCE(@email, email),
+                    phone = COALESCE(@phone, phone),
+                    status = COALESCE(@status, status),
+                    membership_id = COALESCE(@membership_id, membership_id)
+                WHERE user_id = @user_id;
             ";
 
             var parameters = new[]
             {
-                new NpgsqlParameter("@UserId", request.UserId),
-                new NpgsqlParameter("@FullName", request.FullName ?? (object)DBNull.Value),
-                new NpgsqlParameter("@Email", request.Email ?? (object)DBNull.Value),
-                new NpgsqlParameter("@Phone", request.Phone ?? (object)DBNull.Value),
-                new NpgsqlParameter("@Status", request.Status ?? (object)DBNull.Value),
-                new NpgsqlParameter("@MembershipId", request.MembershipId ?? (object)DBNull.Value),
+                new NpgsqlParameter("@user_id", request.user_id),
+                new NpgsqlParameter("@full_name", request.full_name ?? (object)DBNull.Value),
+                new NpgsqlParameter("@email", request.email ?? (object)DBNull.Value),
+                new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value),
+                new NpgsqlParameter("@status", request.status ?? (object)DBNull.Value),
+                new NpgsqlParameter("@membership_id", request.membership_id ?? (object)DBNull.Value)
             };
 
             await _dbContext.Database.ExecuteSqlRawAsync(sqlQuery, parameters, ct);
@@ -223,12 +253,18 @@ namespace BS.Services.UserService
         public async Task<bool> DeleteUserRaw(int userId, CancellationToken ct)
         {
             var sqlQuery = @"
-                DELETE FROM public.""Users""
-                WHERE ""user_id"" = @UserId;
-            ";
+        DELETE FROM public.users
+        WHERE user_id = @user_id
+        ";
 
-            var parameter = new NpgsqlParameter("@UserId", userId);
-            await _dbContext.Database.ExecuteSqlRawAsync(sqlQuery, parameter, ct);
+            var parameter = new NpgsqlParameter("@user_id", userId);
+
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                sqlQuery,
+                new object[] { parameter },
+                ct
+            );
+
             return true;
         }
 
@@ -238,27 +274,43 @@ namespace BS.Services.UserService
         public async Task<bool> IsUsernameExistsRaw(string username, CancellationToken ct)
         {
             var sqlQuery = @"
-                SELECT COUNT(*) 
-                FROM public.""Users""
-                WHERE ""username"" = @Username;
+                SELECT COUNT(*) AS count
+                FROM public.users
+                WHERE username = @username
             ";
 
-            var parameter = new NpgsqlParameter("@Username", username);
-            var result = await _dbContext.Database.ExecuteScalarAsync(sqlQuery, parameter, ct);
-            return Convert.ToInt32(result) > 0;
+            var parameter = new NpgsqlParameter("@username", username);
+
+            var result = await _dbContext
+                                .Database
+                                .SqlQueryRaw<IntScalar>(sqlQuery, parameter)
+                                .FirstOrDefaultAsync(ct);
+
+            return result?.count > 0;
         }
 
         public async Task<bool> IsEmailExistsRaw(string email, CancellationToken ct)
         {
             var sqlQuery = @"
-                SELECT COUNT(*) 
-                FROM public.""Users""
-                WHERE ""email"" = @Email;
+                SELECT COUNT(*) AS count
+                FROM public.users
+                WHERE email = @email
             ";
 
-            var parameter = new NpgsqlParameter("@Email", email);
-            var result = await _dbContext.Database.ExecuteScalarAsync(sqlQuery, parameter, ct);
-            return Convert.ToInt32(result) > 0;
+            var parameter = new NpgsqlParameter("@email", email);
+
+            var result = await _dbContext
+                                .Database
+                                .SqlQueryRaw<IntScalar>(sqlQuery, parameter)
+                                .FirstOrDefaultAsync(ct);
+
+            return result?.count > 0;
+        }
+
+        // Helper class for COUNT(*) scalar queries
+        public class IntScalar
+        {
+            public int count { get; set; }
         }
     }
 }

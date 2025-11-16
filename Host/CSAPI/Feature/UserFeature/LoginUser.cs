@@ -24,10 +24,10 @@ namespace CSAPI.Feature.UserFeature
         {
             public RequestValidator()
             {
-                RuleFor(x => x.UsernameOrEmail)
+                RuleFor(x => x.username_or_email)
                     .NotEmpty().WithMessage("Username or Email is required.");
 
-                RuleFor(x => x.Password)
+                RuleFor(x => x.password)
                     .NotEmpty().WithMessage("Password is required.");
             }
         }
@@ -39,7 +39,7 @@ namespace CSAPI.Feature.UserFeature
 
             try
             {
-                var user = await svc.LoginUserAsync(request, ct);
+                var user = await svc.LoginUserRaw(request, ct);
                 if (user == null)
                 {
                     statusCode = 400;

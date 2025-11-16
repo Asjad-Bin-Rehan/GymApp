@@ -27,15 +27,15 @@ namespace CSAPI.Feature.UserFeature
             {
                 _svc = svc;
 
-                RuleFor(x => x.Username)
+                RuleFor(x => x.username)
                     .NotEmpty().WithMessage("Username is required.")
-                    .MustAsync(async (username, ct) => !await _svc.IsUsernameExistsAsync(username, ct))
+                    .MustAsync(async (username, ct) => !await _svc.IsUsernameExistsRaw(username, ct))
                     .WithMessage("Username already exists.");
 
-                RuleFor(x => x.Email)
+                RuleFor(x => x.email)
                     .NotEmpty().WithMessage("Email is required.")
                     .EmailAddress().WithMessage("Invalid email format.")
-                    .MustAsync(async (email, ct) => !await _svc.IsEmailExistsAsync(email, ct))
+                    .MustAsync(async (email, ct) => !await _svc.IsEmailExistsRaw(email, ct))
                     .WithMessage("Email already exists.");
             }
         }
@@ -47,7 +47,7 @@ namespace CSAPI.Feature.UserFeature
 
             try
             {
-                var result = await svc.AddUserRawAsync(request, ct);
+                var result = await svc.AddUserRaw(request, ct);
                 return ApiResponseHelper.Convert(true, true, message, statusCode, result);
             }
             catch (Exception ex)

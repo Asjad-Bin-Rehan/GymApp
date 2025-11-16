@@ -23,7 +23,7 @@ namespace CSAPI.Feature.UserFeature
 
             try
             {
-                var success = await svc.DeleteUserAsync(userId, ct);
+                var success = await svc.DeleteUserRaw(userId, ct);
                 if (!success)
                 {
                     statusCode = 404;

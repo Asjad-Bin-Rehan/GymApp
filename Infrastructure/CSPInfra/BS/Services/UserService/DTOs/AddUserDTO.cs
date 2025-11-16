@@ -2,14 +2,14 @@
 {
     public class AddUserDTO
     {
-        public string? Username { get; set; }
-        public string? PasswordHash { get; set; }   // Store hashed password
-        public string? FullName { get; set; }
-        public string? Email { get; set; }
-        public string? Phone { get; set; }
-        public DateTime? DateOfBirth { get; set; }
-        public string? MembershipId { get; set; }
-        public string? Status { get; set; } = "Active";
-        public int TotalPoints { get; set; } = 0;
+        public string? username { get; set; }
+        public string? password { get; set; }
+        public string? full_name { get; set; }
+        public string? email { get; set; }
+        public string? phone { get; set; }
+        public DateTime? date_of_birth { get; set; }
+        public string? membership_id { get; set; }
+        public string? status { get; set; } = "Active";
+        public int total_points { get; set; } = 0;
     }
 }

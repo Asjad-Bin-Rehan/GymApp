@@ -1,4 +1,5 @@
 using BS.Services.UserService;
+using BS.Services.UserService.DTOs;
 using CSAPI.Common;
 using CustomHTTP;
 using Logger;
@@ -23,7 +24,7 @@ namespace CSAPI.Feature.UserFeature
 
             try
             {
-                var user = await svc.GetUserByIdAsync(userId, ct);
+                var user = await svc.GetUserByIdRaw(userId, ct);
                 if (user == null)
                 {
                     statusCode = 404;

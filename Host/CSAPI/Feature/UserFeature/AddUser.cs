@@ -23,21 +23,21 @@ namespace CSAPI.Feature.UserFeature
 
         public class RequestValidator : AbstractValidator<AddUserDTO>
         {
-            private readonly IUserServiceRaw _svc;
-            public RequestValidator(IUserServiceRaw svc)
+            private readonly IUserService _svc;
+            public RequestValidator(IUserService svc)
             {
                 _svc = svc;
 
-                RuleFor(x => x.Username)
+                RuleFor(x => x.username)
                     .NotEmpty().WithMessage("Username is required.")
                     .MustAsync(IsUsernameNotExist).WithMessage("Username already exists.");
 
-                RuleFor(x => x.Email)
+                RuleFor(x => x.email)
                     .NotEmpty().WithMessage("Email is required.")
                     .EmailAddress().WithMessage("Invalid email format.")
                     .MustAsync(IsEmailNotExist).WithMessage("Email already exists.");
 
-                RuleFor(x => x.Password)
+                RuleFor(x => x.password)
                     .NotEmpty().WithMessage("Password is required.")
                     .MinimumLength(6).WithMessage("Password must be at least 6 characters.");
             }
@@ -49,7 +49,7 @@ namespace CSAPI.Feature.UserFeature
                 => !await _svc.IsEmailExistsRaw(email, ct);
         }
 
-        private static async Task<IResult> Handle([FromBody] AddUserDTO request, IUserServiceRaw svc, ICustomLogger logger, CancellationToken ct)
+        private static async Task<IResult> Handle([FromBody] AddUserDTO request, IUserService svc, ICustomLogger logger, CancellationToken ct)
         {
             try
             {
