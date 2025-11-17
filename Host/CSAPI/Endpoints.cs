@@ -2,6 +2,7 @@
 using CSAPI.Common.Auth;
 using CSAPI.Common.Constant;
 using CSAPI.Common.Filters;
+using CSAPI.Feature.AccessLogFeature;
 using CSAPI.Feature.AuthMonolithicFeature;
 using CSAPI.Feature.InspectionAttributeFeature;
 using CSAPI.Feature.InspectionCardFeature;
@@ -37,6 +38,7 @@ public static class Endpoints
         endpoints.MapUserEndpoints();
         endpoints.MapPartnerGymEndpoints();
         endpoints.MapLocationEndpoints();
+        endpoints.MapAccessLogEndpoints();
 
 
         // Auto-Increment Code & Paginate
@@ -274,6 +276,17 @@ public static class Endpoints
         endpoints.MapEndpoint<DeleteLocation>();
     }
 
+    private static void MapAccessLogEndpoints(this IEndpointRouteBuilder app)
+{
+    var endpoints = app.MapGroup($"/{nameof(IAccessLogFeature)}").WithTags("IAccessLogFeature");
+
+    endpoints.MapPublicGroup()
+        .MapEndpoint<ListAllAccessLogs>()
+        .MapEndpoint<AddAccessLog>()
+        .MapEndpoint<GetAccessLogsByUserId>()
+        .MapEndpoint<GetAccessLogById>()
+        .MapEndpoint<DeleteAccessLog>();
+}
 
 
 

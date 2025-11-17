@@ -1,4 +1,5 @@
-﻿using BS.Services.AuthService;
+﻿using BS.Services.AccessLogService;
+using BS.Services.AuthService;
 using BS.Services.InspectionAttributeService;
 using BS.Services.InspectionCardService;
 using BS.Services.InspectionCharactersticService;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.TryAddScoped<IUserService, UserService>();
         services.AddScoped<IPartnerGymService, PartnerGymService>();
         services.TryAddScoped<ILocationService, LocationService>();
+        services.TryAddScoped<IAccessLogService, AccessLogService>();
 
 
 
