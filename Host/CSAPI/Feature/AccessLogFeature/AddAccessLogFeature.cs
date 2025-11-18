@@ -29,21 +29,29 @@ namespace CSAPI.Feature.AccessLogFeature
             }
         }
 
-        private static async Task<IResult> Handle([FromBody] AddAccessLogDTO request, IAccessLogService svc, ICustomLogger logger, CancellationToken ct)
+        private static async Task<IResult> Handle(
+        [FromBody] AddAccessLogDTO request, 
+        IAccessLogService svc, 
+        ICustomLogger logger, 
+        CancellationToken ct)
+{
+        try
         {
-            int statusCode = 200;
-            string message = "Success";
+        var result = await svc.AddAccessLogRaw(request, ct);
 
-            try
-            {
-                var result = await svc.AddAccessLogRaw(request, ct);
-                return ApiResponseHelper.Convert(true, true, message, statusCode, result);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, ex.Message);
-                return ApiResponseHelper.Convert(false, false, "Something went wrong", 500, null);
-            }
+        if (!result.Success)
+        {
+            return ApiResponseHelper.Convert(false, false, result.Message, 400, null);
         }
+
+        return ApiResponseHelper.Convert(true, true, result.Message, 200, true);
+        }
+        catch (Exception ex)
+        {
+        logger.LogError(ex, ex.Message);
+        return ApiResponseHelper.Convert(false, false, "Something went wrong", 500, null);
+        }
+}
+
     }
 }
