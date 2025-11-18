@@ -18,9 +18,9 @@ namespace CSAPI.Feature.UserFeature
             .Produces(200)
             .Produces(400)
             .Produces(500)
-            .WithRequestValidation<AddUserDTO>();
+            .WithRequestValidation<SignupUserDTO>();
 
-        public class RequestValidator : AbstractValidator<AddUserDTO>
+        public class RequestValidator : AbstractValidator<SignupUserDTO>
         {
             private readonly IUserService _svc;
             public RequestValidator(IUserService svc)
@@ -44,7 +44,7 @@ namespace CSAPI.Feature.UserFeature
             }
         }
 
-        private static async Task<IResult> Handle([FromBody] AddUserDTO request, IUserService svc, ICustomLogger logger, CancellationToken ct)
+        private static async Task<IResult> Handle([FromBody] SignupUserDTO request, IUserService svc, ICustomLogger logger, CancellationToken ct)
         {
             int statusCode = 200;
             string message = "User registered successfully";

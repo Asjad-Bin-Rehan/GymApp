@@ -5,7 +5,7 @@ namespace BS.Services.UserService
     public interface IUserService
     {
         // Create (RAW)
-        Task<bool> AddUserRaw(AddUserDTO request, CancellationToken ct);
+        Task<bool> AddUserRaw(SignupUserDTO request, CancellationToken ct);
 
         // Read / List / Get (RAW)
         Task<ResponseUserDTO?> GetUserByIdRaw(int userId, CancellationToken ct);
