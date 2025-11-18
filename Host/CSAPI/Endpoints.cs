@@ -39,28 +39,29 @@ public static class Endpoints
         endpoints.MapLocationEndpoints();
 
 
-        // Auto-Increment Code & Paginate
-        endpoints.MapAuthEndpoints();
-        endpoints.MapNextCountEndpoints();
+    //    // Auto-Increment Code & Paginate
+    //    endpoints.MapAuthEndpoints();
+    //    endpoints.MapNextCountEndpoints();
 
-        // Master (Data) Stepper
-        endpoints.MapUnitOfMeasureEndpoints();
-        endpoints.MapQualitativeResultEndpoints();
-        endpoints.MapInspectionAttributeEndpoints();
-        endpoints.MapInspectionCharacteristicsEndpoints();
-        endpoints.MapItemEndpoints();
-        endpoints.MapInspectionCardEndpoints();
-        endpoints.MapItemSampleEndpoints();
-        endpoints.MapItemInspectionCardEndpoints();
+    //    // Master (Data) Stepper
+    //    endpoints.MapUnitOfMeasureEndpoints();
+    //    endpoints.MapQualitativeResultEndpoints();
+    //    endpoints.MapInspectionAttributeEndpoints();
+    //    endpoints.MapInspectionCharacteristicsEndpoints();
+    //    endpoints.MapItemEndpoints();
+    //    endpoints.MapInspectionCardEndpoints();
+    //    endpoints.MapItemSampleEndpoints();
+    //    endpoints.MapItemInspectionCardEndpoints();
 
-        // Evaluation (Plan) Stepper
-        endpoints.MapPurchaseQCEndpoints();
-        endpoints.MapProductionQCEndpoints();
-        endpoints.MapProductionQAEndpoints();
-        endpoints.MapPurchaseQCSampleEndpoints();
-        endpoints.MapProductionQCSampleEndpoints();
-        endpoints.MapProductionQACavityEndpoints();
-        endpoints.MapProductionQACavitySampleEndpoints();
+    //    // Evaluation (Plan) Stepper
+    //    endpoints.MapPurchaseQCEndpoints();
+    //    endpoints.MapProductionQCEndpoints();
+    //    endpoints.MapProductionQAEndpoints();
+    //    endpoints.MapPurchaseQCSampleEndpoints();
+    //    endpoints.MapProductionQCSampleEndpoints();
+    //    endpoints.MapProductionQACavityEndpoints();
+    //    endpoints.MapProductionQACavitySampleEndpoints();
+    //
     }
 
     private static void MapProductionQACavitySampleEndpoints(this IEndpointRouteBuilder app)

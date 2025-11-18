@@ -29,37 +29,43 @@ namespace BS.Services.UserService
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.password);
 
             var sqlQuery = @"
-                INSERT INTO public.users
-                (
-                    username, password_hash, full_name, email,
-                    phone, date_of_birth, join_date, membership_id,
-                    status, total_points
-                )
-                VALUES
-                (
-                    @username, @passwordHash, @full_name, @email,
-                    @phone, @date_of_birth, @join_date, @membership_id,
-                    @status, @total_points
-                );
-            ";
+        INSERT INTO public.users
+        (
+            username, password_hash, full_name, email,
+            phone, date_of_birth, join_date,
+            status, total_points
+        )
+        VALUES
+        (
+            @username, @passwordHash, @full_name, @email,
+            @phone, @date_of_birth, @join_date,
+            @status, @total_points
+        );
+    ";
 
             var parameters = new[]
             {
-                new NpgsqlParameter("@username", request.username ?? (object)DBNull.Value),
-                new NpgsqlParameter("@passwordHash", passwordHash),
-                new NpgsqlParameter("@full_name", request.full_name ?? (object)DBNull.Value),
-                new NpgsqlParameter("@email", request.email ?? (object)DBNull.Value),
-                new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value),
-                new NpgsqlParameter("@date_of_birth", request.date_of_birth ?? (object)DBNull.Value),
-                new NpgsqlParameter("@join_date", DateTime.UtcNow),
-                new NpgsqlParameter("@membership_id", request.membership_id ?? (object)DBNull.Value),
-                new NpgsqlParameter("@status", request.status ?? "Active"),
-                new NpgsqlParameter("@total_points", request.total_points)
-            };
+        new NpgsqlParameter("@username", request.username ?? (object)DBNull.Value),
+        new NpgsqlParameter("@passwordHash", passwordHash),
+        new NpgsqlParameter("@full_name", request.full_name ?? (object)DBNull.Value),
+        new NpgsqlParameter("@email", request.email ?? (object)DBNull.Value),
+        new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value),
+        new NpgsqlParameter("@date_of_birth", request.date_of_birth ?? (object)DBNull.Value),
+
+        // Auto-set join date
+        new NpgsqlParameter("@join_date", DateTime.UtcNow),
+
+        // Default status = Active
+        new NpgsqlParameter("@status", request.status ?? "Active"),
+
+        // Default points = 0
+        new NpgsqlParameter("@total_points", NpgsqlTypes.NpgsqlDbType.Integer) { Value = 0 }
+    };
 
             await _dbContext.Database.ExecuteSqlRawAsync(sqlQuery, parameters, ct);
             return true;
         }
+
 
         // ============================================================
         // LOGIN USER
