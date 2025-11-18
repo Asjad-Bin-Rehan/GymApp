@@ -7,6 +7,7 @@ using BS.Services.ItemCardService;
 using BS.Services.ItemInspectionCardService;
 using BS.Services.ItemSampleService;
 using BS.Services.LocationService;
+using BS.Services.MembershipPlanService;
 using BS.Services.NextIntCodeService;
 using BS.Services.PartnerGymService;
 using BS.Services.ProductionQACavitySampleService;
@@ -42,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<IPartnerGymService, PartnerGymService>();
         services.TryAddScoped<ILocationService, LocationService>();
         services.TryAddScoped<IAccessLogService, AccessLogService>();
+        services.TryAddScoped<IMembershipPlanService, MembershipPlanService>();
 
 
 

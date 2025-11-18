@@ -11,6 +11,7 @@ using CSAPI.Feature.ItemCardFeature;
 using CSAPI.Feature.ItemInspectionCardFeature;
 using CSAPI.Feature.ItemSampleFeature;
 using CSAPI.Feature.LocationFeature;
+using CSAPI.Feature.MemberShipPlanFeature;
 using CSAPI.Feature.NextIntCodeFeature;
 using CSAPI.Feature.PartnerGym;
 using CSAPI.Feature.ProductionQACavityFeature;
@@ -39,6 +40,7 @@ public static class Endpoints
         endpoints.MapPartnerGymEndpoints();
         endpoints.MapLocationEndpoints();
         endpoints.MapAccessLogEndpoints();
+        endpoints.MapMembershipPlanEndpoints();
 
 
         //// Auto-Increment Code & Paginate
@@ -288,6 +290,17 @@ public static class Endpoints
         .MapEndpoint<DeleteAccessLog>();
 }
 
+    private static void MapMembershipPlanEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IMembershipPlanFeature)}").WithTags("IMembershipPlanFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<ListAllMembershipPlans>();        // GET all plans
+            //.MapEndpoint<GetMembershipPlanById>()       // GET plan by ID
+            //.MapEndpoint<AddMembershipPlanRaw>()        // POST / Add new plan (Admin)
+            //.MapEndpoint<UpdateMembershipPlanRaw>()     // PUT / Update plan (Admin)
+            //.MapEndpoint<DeleteMembershipPlanRaw>();    // DELETE plan (Admin)
+    }
 
 
 
