@@ -25,51 +25,116 @@ namespace BS.Services.UserService
         // ADD USER (RAW SQL WITH PASSWORD HASHING)
         // ============================================================
         public async Task<bool> AddUserRaw(SignupUserDTO request, CancellationToken ct)
-        {
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.password);
+{
+    var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.password);
 
-            // Generate membership ID (e.g., MBR-20251118-XYZ12)
-            string membershipId = $"MBR-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6]}";
+    // Generate membership ID
+    string membershipId = $"MBR-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6]}";
 
-            var sqlQuery = @"
-        INSERT INTO public.users
-        (
-            username, password_hash, full_name, email,
-            phone, date_of_birth, join_date,
-            membership_id, status, total_points
-        )
-        VALUES
-        (
-            @username, @passwordHash, @full_name, @email,
-            @phone, @date_of_birth, @join_date,
-            @membership_id, @status, @total_points
-        );
-    ";
+    await using var conn = _dbContext.Database.GetDbConnection();
+    await conn.OpenAsync(ct);
 
-            var parameters = new[]
-            {
-        new NpgsqlParameter("@username", request.username ?? (object)DBNull.Value),
-        new NpgsqlParameter("@passwordHash", passwordHash),
-        new NpgsqlParameter("@full_name", request.full_name ?? (object)DBNull.Value),
-        new NpgsqlParameter("@email", request.email ?? (object)DBNull.Value),
-        new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value),
-        new NpgsqlParameter("@date_of_birth", request.date_of_birth ?? (object)DBNull.Value),
+    // Use transaction so signup + subscription is atomic
+    await using var transaction = await conn.BeginTransactionAsync(ct);
 
-        new NpgsqlParameter("@join_date", DateTime.UtcNow),
+    try
+    {
+        // ---------------------------
+        // 1. INSERT USER
+        // ---------------------------
+        var insertUserSql = @"
+            INSERT INTO Users
+            (
+                username, password_hash, full_name, email,
+                phone, date_of_birth, join_date,
+                membership_id, status, total_points
+            )
+            VALUES
+            (
+                @username, @passwordHash, @full_name, @email,
+                @phone, @date_of_birth, @join_date,
+                @membership_id, @status, @total_points
+            )
+            RETURNING user_id;
+        ";
 
-        // Auto membership ID
-        new NpgsqlParameter("@membership_id", membershipId),
+        await using var insertUserCmd = conn.CreateCommand();
+        insertUserCmd.Transaction = transaction;
+        insertUserCmd.CommandText = insertUserSql;
 
-        // Always default Active
-        new NpgsqlParameter("@status", "Active"),
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@username", request.username ?? (object)DBNull.Value));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@passwordHash", passwordHash));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@full_name", request.full_name ?? (object)DBNull.Value));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@email", request.email ?? (object)DBNull.Value));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@date_of_birth", request.date_of_birth ?? (object)DBNull.Value));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@join_date", DateTime.UtcNow));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@membership_id", membershipId));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@status", "Active"));
+        insertUserCmd.Parameters.Add(new NpgsqlParameter("@total_points", NpgsqlTypes.NpgsqlDbType.Integer)
+{
+    Value = 0
+});
 
-        // Always default 0
-        new NpgsqlParameter("@total_points", NpgsqlTypes.NpgsqlDbType.Integer) { Value = 0 }
-    };
 
-            await _dbContext.Database.ExecuteSqlRawAsync(sqlQuery, parameters, ct);
-            return true;
-        }
+        // Get inserted user_id
+        var userId = (int)(await insertUserCmd.ExecuteScalarAsync(ct));
+
+        // ---------------------------
+        // 2. GET PLAN DURATION
+        // ---------------------------
+        var getPlanSql = @"
+            SELECT duration_months 
+            FROM MembershipPlans 
+            WHERE plan_id = @plan_id;
+        ";
+
+        await using var getPlanCmd = conn.CreateCommand();
+        getPlanCmd.Transaction = transaction;
+        getPlanCmd.CommandText = getPlanSql;
+        getPlanCmd.Parameters.Add(new NpgsqlParameter("@plan_id", request.plan_id));
+
+        var durationObj = await getPlanCmd.ExecuteScalarAsync(ct);
+
+        if (durationObj == null)
+            throw new Exception("Invalid plan_id selected.");
+
+        int durationMonths = Convert.ToInt32(durationObj);
+
+        DateTime startDate = DateTime.UtcNow.Date;
+        DateTime endDate = startDate.AddMonths(durationMonths);
+
+        // ---------------------------
+        // 3. INSERT SUBSCRIPTION
+        // ---------------------------
+        var insertSubscriptionSql = @"
+            INSERT INTO Subscriptions (user_id, plan_id, start_date, end_date, payment_status)
+            VALUES (@user_id, @plan_id, @start_date, @end_date, 'Paid');
+        ";
+
+        await using var insertSubCmd = conn.CreateCommand();
+        insertSubCmd.Transaction = transaction;
+        insertSubCmd.CommandText = insertSubscriptionSql;
+
+        insertSubCmd.Parameters.Add(new NpgsqlParameter("@user_id", userId));
+        insertSubCmd.Parameters.Add(new NpgsqlParameter("@plan_id", request.plan_id));
+        insertSubCmd.Parameters.Add(new NpgsqlParameter("@start_date", startDate));
+        insertSubCmd.Parameters.Add(new NpgsqlParameter("@end_date", endDate));
+
+        await insertSubCmd.ExecuteNonQueryAsync(ct);
+
+        // Commit both inserts
+        await transaction.CommitAsync(ct);
+
+        return true;
+    }
+    catch
+    {
+        await transaction.RollbackAsync(ct);
+        throw;
+    }
+}
+
 
 
 

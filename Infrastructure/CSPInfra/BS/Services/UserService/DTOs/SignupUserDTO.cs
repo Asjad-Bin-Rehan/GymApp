@@ -8,5 +8,8 @@ namespace BS.Services.UserService.DTOs
         public string? email { get; set; }
         public string? phone { get; set; }
         public DateTime? date_of_birth { get; set; }
+
+        // NEW: membership plan selected from frontend
+        public int plan_id { get; set; }
     }
 }

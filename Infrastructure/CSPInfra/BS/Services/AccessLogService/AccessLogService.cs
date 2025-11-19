@@ -18,138 +18,150 @@ namespace BS.Services.AccessLogService
         // ADD ACCESS LOG (RAW SQL)
         // ============================================================
         public async Task<AccessLogResultDTO> AddAccessLogRaw(AddAccessLogDTO request, CancellationToken ct)
-        {
-            var connection = _dbContext.Database.GetDbConnection();
-            await _dbContext.Database.OpenConnectionAsync(ct);
+{
+    var connection = _dbContext.Database.GetDbConnection();
+    await _dbContext.Database.OpenConnectionAsync(ct);
 
-            double gymLat = 0, gymLon = 0;
+    double gymLat = 0, gymLon = 0;
 
-            // 1. Fetch gym location
-            var gymQuery = @"
+    // 1. Fetch gym location
+    var gymQuery = @"
         SELECT L.latitude, L.longitude
         FROM PartnerGyms PG
         JOIN Locations L ON PG.location_id = L.location_id
         WHERE PG.gym_id = @gym_id
     ";
 
-            await using (var cmd = connection.CreateCommand())
-            {
-                cmd.CommandText = gymQuery;
-                cmd.Parameters.Add(new NpgsqlParameter("@gym_id", request.gym_id));
+    await using (var cmd = connection.CreateCommand())
+    {
+        cmd.CommandText = gymQuery;
+        cmd.Parameters.Add(new NpgsqlParameter("@gym_id", request.gym_id));
 
-                using var reader = await cmd.ExecuteReaderAsync(ct);
+        using var reader = await cmd.ExecuteReaderAsync(ct);
 
-                if (!reader.HasRows)
-                    return new AccessLogResultDTO { Success = false, PointsEarned = 0, Message = "Gym not found" };
+        if (!reader.HasRows)
+            return new AccessLogResultDTO { Success = false, PointsEarned = 0, Message = "Gym not found" };
 
-                await reader.ReadAsync(ct);
-                gymLat = reader.GetDouble(0);
-                gymLon = reader.GetDouble(1);
-            }
+        await reader.ReadAsync(ct);
+        gymLat = reader.GetDouble(0);
+        gymLon = reader.GetDouble(1);
+    }
 
-            // 2. Validate distance (within 200 meters)
-            double distance = CalculateDistance(request.device_lat, request.device_lon, gymLat, gymLon);
-            if (distance > 0.3)
-                return new AccessLogResultDTO { Success = false, PointsEarned = 0, Message = "User is not near the gym. Please verify gym ID." };
+    // 2. Validate distance (within 300 meters)
+    double distance = CalculateDistance(request.device_lat, request.device_lon, gymLat, gymLon);
+    if (distance > 0.3)
+        return new AccessLogResultDTO { Success = false, PointsEarned = 0, Message = "User is not near the gym. Please verify gym ID." };
 
-            // 3. Check if user already checked in today
-            var checkTodayQuery = @"
+    // 3. Check if user already checked in today
+    var checkTodayQuery = @"
         SELECT COUNT(*) 
         FROM AccessLogs 
         WHERE user_id = @user_id AND gym_id = @gym_id AND DATE(access_time) = CURRENT_DATE
     ";
-            int checkInCount = 0;
-            await using (var cmd2 = connection.CreateCommand())
-            {
-                cmd2.CommandText = checkTodayQuery;
-                cmd2.Parameters.Add(new NpgsqlParameter("@user_id", request.user_id));
-                cmd2.Parameters.Add(new NpgsqlParameter("@gym_id", request.gym_id));
 
-                checkInCount = Convert.ToInt32(await cmd2.ExecuteScalarAsync(ct));
-            }
+    int checkInCount = 0;
+    await using (var cmd2 = connection.CreateCommand())
+    {
+        cmd2.CommandText = checkTodayQuery;
+        cmd2.Parameters.Add(new NpgsqlParameter("@user_id", request.user_id));
+        cmd2.Parameters.Add(new NpgsqlParameter("@gym_id", request.gym_id));
 
-            bool alreadyCheckedInToday = checkInCount > 0;
+        checkInCount = Convert.ToInt32(await cmd2.ExecuteScalarAsync(ct));
+    }
 
-            // 4. Get user's membership plan
-            int planId = 1;
-            var planQuery = @"
+    bool alreadyCheckedInToday = checkInCount > 0;
+
+    // 4. Fetch active subscription (Not expired)
+    int planId = 0;
+    var subscriptionQuery = @"
         SELECT plan_id 
-        FROM Subscriptions 
+        FROM Subscriptions
         WHERE user_id = @user_id
-        ORDER BY subscription_id DESC LIMIT 1
+        AND end_date >= CURRENT_DATE       -- active subscription
+        ORDER BY subscription_id DESC
+        LIMIT 1
     ";
 
-            await using (var cmd3 = connection.CreateCommand())
-            {
-                cmd3.CommandText = planQuery;
-                cmd3.Parameters.Add(new NpgsqlParameter("@user_id", request.user_id));
+    await using (var cmd3 = connection.CreateCommand())
+    {
+        cmd3.CommandText = subscriptionQuery;
+        cmd3.Parameters.Add(new NpgsqlParameter("@user_id", request.user_id));
 
-                using var reader = await cmd3.ExecuteReaderAsync(ct);
-                if (reader.HasRows)
-                {
-                    await reader.ReadAsync(ct);
-                    planId = reader.GetInt32(0);
-                }
-            }
+        using var reader = await cmd3.ExecuteReaderAsync(ct);
 
-            // 5. Determine points to award
-            int pointsEarned = alreadyCheckedInToday ? 0 : planId switch
+        if (!reader.HasRows)
+        {
+            return new AccessLogResultDTO
             {
-                1 => 10,
-                2 => 20,
-                3 => 30,
-                _ => 10
+                Success = false,
+                PointsEarned = 0,
+                Message = "Your subscription has expired or does not exist. Please renew your membership."
             };
+        }
 
-            // 6. Insert into AccessLogs
-            var insertLog = @"
+        await reader.ReadAsync(ct);
+        planId = reader.GetInt32(0);
+    }
+
+    // 5. Determine points to award
+    int pointsEarned = alreadyCheckedInToday ? 0 : planId switch
+    {
+        1 => 10,
+        2 => 20,
+        3 => 30,
+        _ => 10
+    };
+
+    // 6. Insert access log
+    var insertLog = @"
         INSERT INTO AccessLogs (user_id, gym_id, points_earned)
         VALUES (@user_id, @gym_id, @points)
     ";
-            await _dbContext.Database.ExecuteSqlRawAsync(insertLog, new[]
-            {
+    await _dbContext.Database.ExecuteSqlRawAsync(insertLog, new[]
+    {
         new NpgsqlParameter("@user_id", request.user_id),
         new NpgsqlParameter("@gym_id", request.gym_id),
         new NpgsqlParameter("@points", pointsEarned)
     }, ct);
 
-            // 7. Update user total points if > 0
-            if (pointsEarned > 0)
-            {
-                var updatePoints = @"
+    // 7. Update total points + history
+    if (pointsEarned > 0)
+    {
+        var updatePoints = @"
             UPDATE Users 
             SET total_points = total_points + @points
             WHERE user_id = @user_id
         ";
-                await _dbContext.Database.ExecuteSqlRawAsync(updatePoints, new[]
-                {
+        await _dbContext.Database.ExecuteSqlRawAsync(updatePoints, new[]
+        {
             new NpgsqlParameter("@points", pointsEarned),
             new NpgsqlParameter("@user_id", request.user_id)
         }, ct);
 
-                // 8. Insert PointsHistory
-                var insertHistory = @"
+        var insertHistory = @"
             INSERT INTO PointsHistory (user_id, points_change, reason)
             VALUES (@user_id, @points, @reason)
         ";
-                string reasonMessage = $"Gym check-in at gym {request.gym_id}";
-                await _dbContext.Database.ExecuteSqlRawAsync(insertHistory, new[]
-                {
+        string reasonMessage = $"Gym check-in at gym {request.gym_id}";
+        await _dbContext.Database.ExecuteSqlRawAsync(insertHistory, new[]
+        {
             new NpgsqlParameter("@user_id", request.user_id),
             new NpgsqlParameter("@points", pointsEarned),
             new NpgsqlParameter("@reason", reasonMessage)
         }, ct);
-            }
+    }
 
-            string message = alreadyCheckedInToday ? "Already checked in today. 0 points awarded." : $"Check-in successful. {pointsEarned} points awarded.";
+    string msg = alreadyCheckedInToday
+        ? "Already checked in today. 0 points awarded."
+        : $"Check-in successful. {pointsEarned} points awarded.";
 
-            return new AccessLogResultDTO
-            {
-                Success = true,
-                PointsEarned = pointsEarned,
-                Message = message
-            };
-        }
+    return new AccessLogResultDTO
+    {
+        Success = true,
+        PointsEarned = pointsEarned,
+        Message = msg
+    };
+}
 
 
         // Haversine formula (distance in KM)
