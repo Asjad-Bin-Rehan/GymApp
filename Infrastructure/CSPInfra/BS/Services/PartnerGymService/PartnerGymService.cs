@@ -17,65 +17,73 @@ namespace BS.Services.PartnerGymService
         // =======================================================
         // ADD PARTNER GYM
         // =======================================================
-        public async Task<bool> AddPartnerGymRaw(AddPartnerGymDTO request, CancellationToken ct)
-        {
-            await using var conn = _dbContext.Database.GetDbConnection();
-            await conn.OpenAsync(ct);
+        public async Task<int> AddPartnerGymRaw(AddPartnerGymDTO request, int adminId, CancellationToken ct)
+{
+    await using var conn = _dbContext.Database.GetDbConnection();
+    await conn.OpenAsync(ct);
 
-            await using var transaction = await conn.BeginTransactionAsync(ct);
+    await using var transaction = await conn.BeginTransactionAsync(ct);
 
-            try
-            {
-                // -----------------------------
-                // 1. Insert Location
-                // -----------------------------
-                await using var locCmd = conn.CreateCommand();
-                locCmd.Transaction = transaction;
-                locCmd.CommandText = @"
-                    INSERT INTO locations (country, state, city, postal_code, address, latitude, longitude)
-                    VALUES (@country, @state, @city, @postal_code, @address, @latitude, @longitude)
-                    RETURNING location_id;
-                ";
+    try
+    {
+        // -----------------------------
+        // 1️⃣ Insert Location
+        // -----------------------------
+        await using var locCmd = conn.CreateCommand();
+        locCmd.Transaction = transaction;
+        locCmd.CommandText = @"
+            INSERT INTO locations (country, state, city, postal_code, address, latitude, longitude)
+            VALUES (@country, @state, @city, @postal_code, @address, @latitude, @longitude)
+            RETURNING location_id;
+        ";
 
-                locCmd.Parameters.Add(new NpgsqlParameter("@country", request.country));
-                locCmd.Parameters.Add(new NpgsqlParameter("@state", request.state ?? (object)DBNull.Value));
-                locCmd.Parameters.Add(new NpgsqlParameter("@city", request.city));
-                locCmd.Parameters.Add(new NpgsqlParameter("@postal_code", request.postal_code ?? (object)DBNull.Value));
-                locCmd.Parameters.Add(new NpgsqlParameter("@address", request.address ?? (object)DBNull.Value));
-                locCmd.Parameters.Add(new NpgsqlParameter("@latitude", request.latitude));
-                locCmd.Parameters.Add(new NpgsqlParameter("@longitude", request.longitude));
+        locCmd.Parameters.Add(new NpgsqlParameter("@country", request.country));
+        locCmd.Parameters.Add(new NpgsqlParameter("@state", request.state ?? (object)DBNull.Value));
+        locCmd.Parameters.Add(new NpgsqlParameter("@city", request.city));
+        locCmd.Parameters.Add(new NpgsqlParameter("@postal_code", request.postal_code ?? (object)DBNull.Value));
+        locCmd.Parameters.Add(new NpgsqlParameter("@address", request.address ?? (object)DBNull.Value));
+        locCmd.Parameters.Add(new NpgsqlParameter("@latitude", request.latitude));
+        locCmd.Parameters.Add(new NpgsqlParameter("@longitude", request.longitude));
 
-                var locationIdObj = await locCmd.ExecuteScalarAsync(ct);
-                if (locationIdObj == null) throw new Exception("Failed to insert location.");
+        var locationIdObj = await locCmd.ExecuteScalarAsync(ct);
+        if (locationIdObj == null) throw new Exception("Failed to insert location.");
 
-                var locationId = Convert.ToInt32(locationIdObj);
+        var locationId = Convert.ToInt32(locationIdObj);
 
-                // -----------------------------
-                // 2. Insert Partner Gym
-                // -----------------------------
-                await using var gymCmd = conn.CreateCommand();
-                gymCmd.Transaction = transaction;
-                gymCmd.CommandText = @"
-                    INSERT INTO partnergyms (gym_name, location_id, contact_person, phone, partnership_date, status)
-                    VALUES (@gym_name, @location_id, @contact_person, @phone, CURRENT_DATE, 'Active');
-                ";
+        // -----------------------------
+        // 2️⃣ Insert Partner Gym
+        // -----------------------------
+        await using var gymCmd = conn.CreateCommand();
+        gymCmd.Transaction = transaction;
+        gymCmd.CommandText = @"
+            INSERT INTO partnergyms 
+                (gym_name, location_id, contact_person, phone, partnership_date, status, added_by)
+            VALUES 
+                (@gym_name, @location_id, @contact_person, @phone, CURRENT_DATE, 'Active', @added_by)
+            RETURNING gym_id;
+        ";
 
-                gymCmd.Parameters.Add(new NpgsqlParameter("@gym_name", request.gym_name));
-                gymCmd.Parameters.Add(new NpgsqlParameter("@location_id", locationId));
-                gymCmd.Parameters.Add(new NpgsqlParameter("@contact_person", request.contact_person ?? (object)DBNull.Value));
-                gymCmd.Parameters.Add(new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value));
+        gymCmd.Parameters.Add(new NpgsqlParameter("@gym_name", request.gym_name));
+        gymCmd.Parameters.Add(new NpgsqlParameter("@location_id", locationId));
+        gymCmd.Parameters.Add(new NpgsqlParameter("@contact_person", request.contact_person ?? (object)DBNull.Value));
+        gymCmd.Parameters.Add(new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value));
+        gymCmd.Parameters.Add(new NpgsqlParameter("@added_by", adminId));
 
-                await gymCmd.ExecuteNonQueryAsync(ct);
+        var gymIdObj = await gymCmd.ExecuteScalarAsync(ct);
+        if (gymIdObj == null) throw new Exception("Failed to insert partner gym.");
 
-                await transaction.CommitAsync(ct);
-                return true;
-            }
-            catch
-            {
-                await transaction.RollbackAsync(ct);
-                throw;
-            }
-        }
+        var gymId = Convert.ToInt32(gymIdObj);
+
+        await transaction.CommitAsync(ct);
+        return gymId;
+    }
+    catch
+    {
+        await transaction.RollbackAsync(ct);
+        throw;
+    }
+}
+
 
 
         public async Task<int> AddPartnerGymWithLocation(AddPartnerGymDTO request, CancellationToken ct)

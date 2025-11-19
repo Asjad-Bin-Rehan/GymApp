@@ -4,6 +4,7 @@ using CSAPI.Common;
 using CustomHTTP;
 using Logger;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CSAPI.Feature.PartnerGym
 {
@@ -15,15 +16,27 @@ namespace CSAPI.Feature.PartnerGym
             .Produces(200)
             .Produces(500);
 
-        private static async Task<IResult> Handle([FromBody] AddPartnerGymDTO request, [FromServices] IPartnerGymService svc, ICustomLogger logger, CancellationToken ct)
+        private static async Task<IResult> Handle(
+            [FromBody] AddPartnerGymDTO request, 
+            [FromServices] IPartnerGymService svc, 
+            ICustomLogger logger, 
+            HttpContext http, 
+            CancellationToken ct)
         {
-            int statusCode = 200;
-            string message = "Success";
-
             try
             {
-                await svc.AddPartnerGymRaw(request, ct);
-                return ApiResponseHelper.Convert(true, true, message, statusCode, null);
+                // Extract admin_id from JWT claims
+                var adminIdClaim = http.User.FindFirst("admin_id")?.Value;
+                if (adminIdClaim == null)
+                    return ApiResponseHelper.Convert(false, false, "Unauthorized", 401, null);
+
+                if (!int.TryParse(adminIdClaim, out int adminId))
+                    return ApiResponseHelper.Convert(false, false, "Invalid admin ID", 401, null);
+
+                // Call the new service method
+                var gymId = await svc.AddPartnerGymRaw(request, adminId, ct);
+
+                return ApiResponseHelper.Convert(true, true, "Partner gym added successfully", 200, new { gym_id = gymId });
             }
             catch (Exception ex)
             {
