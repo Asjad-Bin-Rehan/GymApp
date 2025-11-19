@@ -1,4 +1,5 @@
 ﻿using BS.Services.AccessLogService;
+using BS.Services.AdminService;
 using BS.Services.AuthService;
 using BS.Services.InspectionAttributeService;
 using BS.Services.InspectionCardService;
@@ -18,6 +19,8 @@ using BS.Services.ProductionQCService;
 using BS.Services.PurchaseQCSampleService;
 using BS.Services.PurchaseQCService;
 using BS.Services.QualitativeResultService;
+using BS.Services.RedemptionService;
+using BS.Services.RewardCatalogService;
 using BS.Services.UnitOfMeasure;
 using BS.Services.UserService;
 using DA;
@@ -44,6 +47,9 @@ public static class DependencyInjection
         services.TryAddScoped<ILocationService, LocationService>();
         services.TryAddScoped<IAccessLogService, AccessLogService>();
         services.TryAddScoped<IMembershipPlanService, MembershipPlanService>();
+        services.TryAddScoped<IAdminService, AdminService>();
+        services.TryAddScoped<IRewardCatalogService, RewardCatalogService>();
+        services.TryAddScoped<IRedemptionService, RedemptionService>();
 
 
 

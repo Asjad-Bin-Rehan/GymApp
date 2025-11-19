@@ -6,7 +6,7 @@ namespace BS.Services.PartnerGymService
     {
         Task<int> AddPartnerGymRaw(AddPartnerGymDTO request, int adminId, CancellationToken ct);
 
-        Task<int> AddPartnerGymWithLocation(AddPartnerGymDTO request, CancellationToken ct);
+        Task<int> AddPartnerGymManual(AddPartnerGymManualDTO request, CancellationToken ct);
         Task<ResponsePartnerGymDTO?> GetPartnerGymByIdRaw(int gymId, CancellationToken ct);
         Task<List<ResponsePartnerGymDTO>> ListPartnerGymsRaw(int limit, int offset, CancellationToken ct);
         Task<bool> UpdatePartnerGymRaw(UpdatePartnerGymDTO request, CancellationToken ct);

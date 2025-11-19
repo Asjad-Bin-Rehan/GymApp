@@ -3,6 +3,7 @@ using CSAPI.Common.Auth;
 using CSAPI.Common.Constant;
 using CSAPI.Common.Filters;
 using CSAPI.Feature.AccessLogFeature;
+using CSAPI.Feature.AdminFeature;
 using CSAPI.Feature.AuthMonolithicFeature;
 using CSAPI.Feature.InspectionAttributeFeature;
 using CSAPI.Feature.InspectionCardFeature;
@@ -22,6 +23,8 @@ using CSAPI.Feature.ProductionQCSampleFeature;
 using CSAPI.Feature.PurchaseQCFeature;
 using CSAPI.Feature.PurchaseQCSampleFeature;
 using CSAPI.Feature.QualitativeResultFeature;
+using CSAPI.Feature.RedemptionFeature;
+using CSAPI.Feature.RewardCatalogFeature;
 using CSAPI.Feature.UnitOfMeasureFeature;
 using CSAPI.Feature.UserFeature;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,7 +43,10 @@ public static class Endpoints
         endpoints.MapPartnerGymEndpoints();
         endpoints.MapLocationEndpoints();
         endpoints.MapAccessLogEndpoints();
+        endpoints.MapAdminFeatureEndpoints();
         endpoints.MapMembershipPlanEndpoints();
+        endpoints.MapRewardCatalogEndpoints();
+        endpoints.MapRedemptionEndpoints();
 
 
         //// Auto-Increment Code & Paginate
@@ -260,7 +266,7 @@ public static class Endpoints
 
         endpoints.MapPublicGroup()
             .MapEndpoint<AddPartnerGym>()
-            .MapEndpoint<AddPartnerGymWithLocation>()
+            .MapEndpoint<AddPartnerGymManual>()
             .MapEndpoint<GetPartnerGymById>()
             .MapEndpoint<ListPartnerGyms>()
             .MapEndpoint<UpdatePartnerGym>()
@@ -295,12 +301,60 @@ public static class Endpoints
         var endpoints = app.MapGroup($"/{nameof(IMembershipPlanFeature)}").WithTags("IMembershipPlanFeature");
 
         endpoints.MapPublicGroup()
-            .MapEndpoint<ListAllMembershipPlans>();        // GET all plans
-            //.MapEndpoint<GetMembershipPlanById>()       // GET plan by ID
-            //.MapEndpoint<AddMembershipPlanRaw>()        // POST / Add new plan (Admin)
-            //.MapEndpoint<UpdateMembershipPlanRaw>()     // PUT / Update plan (Admin)
-            //.MapEndpoint<DeleteMembershipPlanRaw>();    // DELETE plan (Admin)
+            .MapEndpoint<ListAllMembershipPlans>();
+            //.MapEndpoint<GetMembershipPlanById>()
+            //.MapEndpoint<AddMembershipPlanRaw>()
+            //.MapEndpoint<UpdateMembershipPlanRaw>()
+            //.MapEndpoint<DeleteMembershipPlanRaw>();
     }
+
+
+
+    public static void MapAdminFeatureEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IAdminFeature)}").WithTags("IAdminFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<SignUpAdmin>()                 // POST / Sign up new admin
+            // .MapEndpoint<LoginAdminWithoutJWT>();    // POST / Login admin without JWT
+        ;
+    LoginAdminWithoutJWT.Map(endpoints);            // Fix: Call static Map directly since LoginAdminWithoutJWT does not implement IFeature
+}
+
+
+    private static void MapRewardCatalogEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IRewardCatalogFeature)}").WithTags("IRewardCatalogFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<AddRewardFeature>()           // POST / Add new reward
+            .MapEndpoint<ListAllRewardsFeature>()      // GET / List all rewards
+            .MapEndpoint<GetRewardByIdFeature>()       // GET / Get reward by ID
+            .MapEndpoint<UpdateRewardFeature>()        // PUT / Update reward
+            .MapEndpoint<DeleteRewardFeature>();       // DELETE / Delete reward
+    }
+
+
+
+    private static void MapRedemptionEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IRedemptionFeature)}").WithTags("IRedemptionFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<AddRedemption>()
+            .MapEndpoint<ListAllRedemptions>()
+            .MapEndpoint<GetRedemptionById>()
+            .MapEndpoint<GetRedemptionsByUserId>()
+            .MapEndpoint<UpdateRedemption>()
+            .MapEndpoint<DeleteRedemption>();
+    }
+
+
+
+
+
+
+
 
 
 

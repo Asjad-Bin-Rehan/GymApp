@@ -49,6 +49,10 @@
 	  <ProjectReference Include="..\..\Utility\Logger\Logger.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Feature\NewFolder\" />
+	</ItemGroup>
+
 
 
 
