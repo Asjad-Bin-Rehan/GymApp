@@ -75,17 +75,14 @@ namespace CSAPI.Extensions
 
         public static IServiceCollection AddAuthDI(this IServiceCollection services, IConfiguration configuration)
         {
+            // Load JWT settings from configuration with environment variable fallback
+            var Key = Environment.GetEnvironmentVariable("JWT_KEY") ?? configuration["Jwt:Secret"] ?? configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is not configured");
+            var Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer is not configured");
+            var Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience is not configured");
+            var AccessTokenExpirationInMinutes = int.Parse(Environment.GetEnvironmentVariable("JWT_ACCESS_TOKEN_EXPIRATION_IN_MINUTES") ?? configuration["Jwt:AccessTokenExpirationInMinutes"] ?? "60");
+            var RefreshTokenExpirationInDays = int.Parse(Environment.GetEnvironmentVariable("JWT_REFRESH_TOKEN_EXPIRATION_IN_DAYS") ?? configuration["Jwt:RefreshTokenExpirationInDays"] ?? "7");
 
-
-
-
-            var Key = Environment.GetEnvironmentVariable("JWT_KEY") ?? "asdavvasd132132131231232312312dsadasdsdsdsds@asd112";
-            var Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "localhost";
-            var Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "localhost";
-            var AccessTokenExpirationInMinutes = int.Parse(Environment.GetEnvironmentVariable("JWT_ACCESS_TOKEN_EXPIRATION_IN_MINUTES") ?? "10");
-            var RefreshTokenExpirationInDays = int.Parse(Environment.GetEnvironmentVariable("JWT_REFRESH_TOKEN_EXPIRATION_IN_DAYS") ?? "10");
-
-
+            // Configure JWT options
             services.Configure<JwtOptions>(options =>
             {
                 options.Key = Key;
@@ -95,13 +92,11 @@ namespace CSAPI.Extensions
                 options.RefreshTokenExpirationInDays = RefreshTokenExpirationInDays;
             });
 
-
+            // Add JWT authentication and authorization
             services
+                .AddJwtValidator(configuration, Key, Issuer, Audience)
+                .AddCustomAuthorization();
 
-            .AddJwtValidator(configuration, Key, Issuer, Audience)
-            .AddCustomAuthorization();
-
-           
             services.AddTransient<Jwt>();
 
             return services;

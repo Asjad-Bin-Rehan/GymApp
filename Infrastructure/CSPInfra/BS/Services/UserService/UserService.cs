@@ -95,15 +95,34 @@ namespace BS.Services.UserService
             cmd.Parameters.Add(new NpgsqlParameter("@username_or_email", request.username_or_email));
 
             await using var reader = await cmd.ExecuteReaderAsync(ct);
-            if (!await reader.ReadAsync(ct)) return null;
+            if (!await reader.ReadAsync(ct))
+            {
+                Console.WriteLine("❌ LOGIN FAILED: User not found");
+                return null;
+            }
 
             var passwordHash = reader.GetString(reader.GetOrdinal("password_hash"));
-            if (!BCrypt.Net.BCrypt.Verify(request.password, passwordHash)) return null;
+            if (!BCrypt.Net.BCrypt.Verify(request.password, passwordHash))
+            {
+                Console.WriteLine("❌ LOGIN FAILED: Invalid password");
+                return null;
+            }
+
+            var userId = reader.GetInt32(reader.GetOrdinal("user_id"));
+            var username = reader.GetString(reader.GetOrdinal("username"));
+
+            // Generate JWT Token
+            var token = GenerateJwtToken(userId, username);
+
+            Console.WriteLine("✅ LOGIN SUCCESS:");
+            Console.WriteLine($"   User ID: {userId}");
+            Console.WriteLine($"   Username: {username}");
+            Console.WriteLine($"   Token Generated: {token[..50]}..."); // Show first 50 chars
 
             return new ResponseUserDTO
             {
-                user_id = reader.GetInt32(reader.GetOrdinal("user_id")),
-                username = reader.GetString(reader.GetOrdinal("username")),
+                user_id = userId,
+                username = username,
                 full_name = reader.GetString(reader.GetOrdinal("full_name")),
                 email = reader.GetString(reader.GetOrdinal("email")),
                 phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
@@ -111,7 +130,8 @@ namespace BS.Services.UserService
                 membership_id = reader.IsDBNull(reader.GetOrdinal("membership_id")) ? null : reader.GetString(reader.GetOrdinal("membership_id")),
                 total_points = reader.GetInt32(reader.GetOrdinal("total_points")),
                 date_of_birth = reader.IsDBNull(reader.GetOrdinal("date_of_birth")) ? null : reader.GetDateTime(reader.GetOrdinal("date_of_birth")),
-                join_date = reader.GetDateTime(reader.GetOrdinal("join_date"))
+                join_date = reader.GetDateTime(reader.GetOrdinal("join_date")),
+                token = token
             };
         }
 

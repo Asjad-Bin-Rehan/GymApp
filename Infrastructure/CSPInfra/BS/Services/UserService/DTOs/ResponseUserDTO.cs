@@ -14,6 +14,6 @@
         public DateTime? join_date { get; set; }
 
         // JWT Token (optional)
-        // public string? token { get; set; }
+        public string? token { get; set; }
     }
 }

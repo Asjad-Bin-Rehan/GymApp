@@ -11,11 +11,18 @@ namespace Logger
 {
     public static class SlackExceptionMethods
     {
-        private static readonly string _webhookUrl = DI.SlackWebhook;
+        private static readonly string? _webhookUrl = DI.SlackWebhook;
         private static string AppName="Lockkeyz";
 
         public static async void AddException(Exception ex)
         {
+            // Skip if webhook not configured
+            if (string.IsNullOrEmpty(_webhookUrl))
+            {
+                Console.WriteLine($"[Slack] Webhook not configured. Exception: {ex.Message}");
+                return;
+            }
+
             var httpClient = new HttpClient();
 
             var payload = new
@@ -29,6 +36,13 @@ namespace Logger
         }
         public static async void AddException(string message)
         {
+            // Skip if webhook not configured
+            if (string.IsNullOrEmpty(_webhookUrl))
+            {
+                Console.WriteLine($"[Slack] Webhook not configured. Message: {message}");
+                return;
+            }
+
             var httpClient = new HttpClient();
 
             var payload = new

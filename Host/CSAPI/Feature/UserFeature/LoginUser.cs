@@ -44,9 +44,13 @@ namespace CSAPI.Feature.UserFeature
                 {
                     statusCode = 400;
                     message = "Invalid credentials";
+                    Console.WriteLine("❌ LOGIN ENDPOINT: Returning 400 - Invalid credentials");
                     return ApiResponseHelper.Convert(false, false, message, statusCode, null);
                 }
 
+                Console.WriteLine("✅ LOGIN ENDPOINT: Returning user data with token");
+                Console.WriteLine($"   Response includes token: {!string.IsNullOrEmpty(user.token)}");
+                
                 return ApiResponseHelper.Convert(true, true, message, statusCode, user);
             }
             catch (Exception ex)

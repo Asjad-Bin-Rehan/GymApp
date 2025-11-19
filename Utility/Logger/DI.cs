@@ -29,12 +29,12 @@ namespace Logger
             return services;
         }
 
-        public static string SlackWebhook
+        public static string? SlackWebhook
         {
             get
             {
-                var slack=Environment.GetEnvironmentVariable("SlackWebHook");
-                ArgumentNullException.ThrowIfNullOrEmpty(slack, "please add env:SlackWebHook value");
+                var slack = Environment.GetEnvironmentVariable("SlackWebHook");
+                // Make it optional - return null if not configured
                 return slack;
             }
         }

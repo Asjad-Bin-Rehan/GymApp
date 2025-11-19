@@ -67,14 +67,39 @@ namespace CSAPI.Extensions.Validators
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    IssuerSigningKey = Jwt.SecurityKey(key),
-                    ValidateIssuer = false,//TODO will be added in future
-                    ValidateAudience = false, // TODO will be added in future
-                    ValidateLifetime = true,
+                    // Validate the signing key
                     ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = Jwt.SecurityKey(key),
+                    
+                    // Validate the issuer (who created the token)
+                    ValidateIssuer = true,
                     ValidIssuer = issuer,
+                    
+                    // Validate the audience (who the token is intended for)
+                    ValidateAudience = true,
                     ValidAudience = audience,
-
+                    
+                    // Validate token expiration
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero // Remove default 5 minute clock skew
+                };
+                
+                // Optional: Add event handlers for debugging
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                        {
+                            context.Response.Headers.Add("Token-Expired", "true");
+                        }
+                        return Task.CompletedTask;
+                    },
+                    OnChallenge = context =>
+                    {
+                        // Log authentication challenges for debugging
+                        return Task.CompletedTask;
+                    }
                 };
             });
 

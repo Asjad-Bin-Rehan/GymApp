@@ -12,7 +12,6 @@ namespace CSAPI.Extensions
     {
         public static async Task Configure(this WebApplication app)
         {
-
             //app.UseSerilogRequestLogging();
             app.UseHttpMetrics();
             
@@ -20,21 +19,26 @@ namespace CSAPI.Extensions
             app.UseSwagger();
             app.UseSwaggerUI();
             app.UseHttpsRedirection();
-            app.UseMiddleware<UserContextMiddleware>();
-            //app.UseAuthentication();
-            //app.UseAuthorization();
-            app.MapEndpointsExposed();
-            app.MapEndpoints();
-            //await app.EnsureDatabaseCreated();
+            
+            // CORS must be before Authentication/Authorization
             app.UseCors(x => x
               .AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader()
               );
-              
-
+            
+            // Authentication must come before Authorization
+            app.UseAuthentication();
+            app.UseAuthorization();
+            
+            // Custom middleware after authentication
+            app.UseMiddleware<UserContextMiddleware>();
+            
+            app.MapEndpointsExposed();
+            app.MapEndpoints();
+            
+            //await app.EnsureDatabaseCreated();
             //TODO: Add migration await app.EnsureDatabaseCreated();
-
         }
         public static async Task GlobalExceptionHandler(this WebApplication app)
         {

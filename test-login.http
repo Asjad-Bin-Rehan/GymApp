@@ -1,0 +1,29 @@
+### Test Login Endpoint
+POST http://localhost:5000/api/v1/IUserFeature/LoginUser
+Content-Type: application/json
+
+{
+  "username_or_email": "your_username_or_email",
+  "password": "your_password"
+}
+
+### Expected Response (with token now included):
+# {
+#   "success": true,
+#   "isSuccess": true,
+#   "message": "Login successful",
+#   "statusCode": 200,
+#   "data": {
+#     "user_id": 1,
+#     "username": "testuser",
+#     "full_name": "Test User",
+#     "email": "test@example.com",
+#     "phone": "1234567890",
+#     "membership_id": "MBR-20251119-abc123",
+#     "status": "Active",
+#     "total_points": 0,
+#     "date_of_birth": "1990-01-01T00:00:00",
+#     "join_date": "2025-11-19T00:00:00",
+#     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+#   }
+# }
