@@ -234,17 +234,33 @@ namespace BS.Services.UserService
                     phone, date_of_birth, join_date,
                     membership_id, status, total_points
                 FROM public.users
-                WHERE user_id = @user_id
+                WHERE user_id = @user_id;
             ";
 
-            var parameter = new NpgsqlParameter("@user_id", userId);
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
 
-            var result = await _dbContext
-                                .Database
-                                .SqlQueryRaw<ResponseUserDTO>(sqlQuery, parameter)
-                                .FirstOrDefaultAsync(ct);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sqlQuery;
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", userId));
 
-            return result;
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            if (!await reader.ReadAsync(ct)) return null;
+
+            return new ResponseUserDTO
+            {
+                user_id = reader.GetInt32(reader.GetOrdinal("user_id")),
+                username = reader.GetString(reader.GetOrdinal("username")),
+                full_name = reader.GetString(reader.GetOrdinal("full_name")),
+                email = reader.GetString(reader.GetOrdinal("email")),
+                phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
+                date_of_birth = reader.IsDBNull(reader.GetOrdinal("date_of_birth")) ? null : reader.GetDateTime(reader.GetOrdinal("date_of_birth")),
+                join_date = reader.GetDateTime(reader.GetOrdinal("join_date")),
+                membership_id = reader.IsDBNull(reader.GetOrdinal("membership_id")) ? null : reader.GetString(reader.GetOrdinal("membership_id")),
+                status = reader.GetString(reader.GetOrdinal("status")),
+                total_points = reader.GetInt32(reader.GetOrdinal("total_points")),
+                token = null // Not populated when fetching by ID
+            };
         }
 
 
@@ -300,16 +316,34 @@ namespace BS.Services.UserService
                 LIMIT @Limit OFFSET @Offset;
             ";
 
-            var parameters = new[]
-            {
-                new NpgsqlParameter("@Limit", limit),
-                new NpgsqlParameter("@Offset", offset)
-            };
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
 
-            var users = await _dbContext
-                            .Database
-                            .SqlQueryRaw<ResponseUserDTO>(sqlQuery, parameters)
-                            .ToListAsync(ct);
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sqlQuery;
+            cmd.Parameters.Add(new NpgsqlParameter("@Limit", limit));
+            cmd.Parameters.Add(new NpgsqlParameter("@Offset", offset));
+
+            var users = new List<ResponseUserDTO>();
+
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                users.Add(new ResponseUserDTO
+                {
+                    user_id = reader.GetInt32(reader.GetOrdinal("user_id")),
+                    username = reader.GetString(reader.GetOrdinal("username")),
+                    full_name = reader.GetString(reader.GetOrdinal("full_name")),
+                    email = reader.GetString(reader.GetOrdinal("email")),
+                    phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
+                    date_of_birth = reader.IsDBNull(reader.GetOrdinal("date_of_birth")) ? null : reader.GetDateTime(reader.GetOrdinal("date_of_birth")),
+                    join_date = reader.GetDateTime(reader.GetOrdinal("join_date")),
+                    membership_id = reader.IsDBNull(reader.GetOrdinal("membership_id")) ? null : reader.GetString(reader.GetOrdinal("membership_id")),
+                    status = reader.GetString(reader.GetOrdinal("status")),
+                    total_points = reader.GetInt32(reader.GetOrdinal("total_points")),
+                    token = null
+                });
+            }
 
             return users;
         }
