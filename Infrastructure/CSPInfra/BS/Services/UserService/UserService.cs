@@ -141,16 +141,16 @@ namespace BS.Services.UserService
         // ============================================================
         // LOGIN USER
         // ============================================================
-        public async Task<ResponseUserDTO?> LoginUserRaw(LoginUserDTO request, CancellationToken ct)
+        public async Task<(ResponseUserDTO? user, string? errorMessage)> LoginUserRaw(LoginUserDTO request, CancellationToken ct)
         {
             var sqlQuery = @"
-                SELECT 
-                    user_id, username, password_hash, full_name, email,
-                    phone, status, membership_id, total_points,
-                    date_of_birth, join_date
-                FROM public.users
-                WHERE username = @username_or_email OR email = @username_or_email;
-            ";
+        SELECT 
+            user_id, username, password_hash, full_name, email,
+            phone, status, membership_id, total_points,
+            date_of_birth, join_date
+        FROM public.users
+        WHERE username = @username_or_email OR email = @username_or_email;
+    ";
 
             await using var conn = _dbContext.Database.GetDbConnection();
             await conn.OpenAsync(ct);
@@ -162,15 +162,21 @@ namespace BS.Services.UserService
             await using var reader = await cmd.ExecuteReaderAsync(ct);
             if (!await reader.ReadAsync(ct))
             {
-                Console.WriteLine("❌ LOGIN FAILED: User not found");
-                return null;
+                return (null, "User not found");
             }
 
             var passwordHash = reader.GetString(reader.GetOrdinal("password_hash"));
             if (!BCrypt.Net.BCrypt.Verify(request.password, passwordHash))
             {
-                Console.WriteLine("❌ LOGIN FAILED: Invalid password");
-                return null;
+                return (null, "Invalid password");
+            }
+
+            var status = reader.GetString(reader.GetOrdinal("status"));
+            if (status != "Active")
+            {
+                return (null, status == "Inactive"
+                    ? "Your account is inactive. Please contact support."
+                    : "Your account has expired. Please renew your membership.");
             }
 
             var userId = reader.GetInt32(reader.GetOrdinal("user_id"));
@@ -179,26 +185,24 @@ namespace BS.Services.UserService
             // Generate JWT Token
             var token = GenerateJwtToken(userId, username);
 
-            Console.WriteLine("✅ LOGIN SUCCESS:");
-            Console.WriteLine($"   User ID: {userId}");
-            Console.WriteLine($"   Username: {username}");
-            Console.WriteLine($"   Token Generated: {token[..50]}..."); // Show first 50 chars
-
-            return new ResponseUserDTO
+            var userDto = new ResponseUserDTO
             {
                 user_id = userId,
                 username = username,
                 full_name = reader.GetString(reader.GetOrdinal("full_name")),
                 email = reader.GetString(reader.GetOrdinal("email")),
                 phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
-                status = reader.GetString(reader.GetOrdinal("status")),
+                status = status,
                 membership_id = reader.IsDBNull(reader.GetOrdinal("membership_id")) ? null : reader.GetString(reader.GetOrdinal("membership_id")),
                 total_points = reader.GetInt32(reader.GetOrdinal("total_points")),
                 date_of_birth = reader.IsDBNull(reader.GetOrdinal("date_of_birth")) ? null : reader.GetDateTime(reader.GetOrdinal("date_of_birth")),
                 join_date = reader.GetDateTime(reader.GetOrdinal("join_date")),
                 token = token
             };
+
+            return (userDto, null);
         }
+
 
         private string GenerateJwtToken(int userId, string username)
         {

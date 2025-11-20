@@ -171,6 +171,34 @@ namespace BS.Services.PartnerGymService
             return result;
         }
 
+
+        public async Task<List<ResponsePartnerGymByAdminDTO>> GetPartnerGymsByAdminIdRaw(int adminId, CancellationToken ct)
+        {
+            var sqlQuery = @"
+        SELECT 
+            pg.gym_id, 
+            pg.gym_name, 
+            pg.location_id,
+            pg.contact_person, 
+            pg.phone, 
+            pg.partnership_date, 
+            pg.status,
+            l.latitude, 
+            l.longitude
+        FROM public.partnergyms pg
+        LEFT JOIN public.locations l ON pg.location_id = l.location_id
+        WHERE pg.admin_id = @admin_id
+        ORDER BY pg.gym_id;
+    ";
+
+            var param = new NpgsqlParameter("@admin_id", adminId);
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ResponsePartnerGymByAdminDTO>(sqlQuery, param)
+                .ToListAsync(ct);
+        }
+
+
         // =======================================================
         // LIST PARTNER GYMS
         // =======================================================
@@ -197,6 +225,32 @@ namespace BS.Services.PartnerGymService
                 .SqlQueryRaw<ResponsePartnerGymDTO>(sqlQuery, parameters)
                 .ToListAsync(ct);
         }
+
+        public async Task<List<ActiveGymDTO>> ListActivePartnerGymsRaw(int limit, int offset, CancellationToken ct)
+        {
+            var sqlQuery = @"
+        SELECT 
+            pg.gym_id, pg.gym_name, pg.location_id,
+            pg.contact_person, pg.phone, pg.partnership_date,
+            l.latitude, l.longitude
+        FROM public.partnergyms pg
+        LEFT JOIN public.locations l ON pg.location_id = l.location_id
+        WHERE pg.status = 'Active'
+        ORDER BY pg.gym_id
+        LIMIT @Limit OFFSET @Offset
+    ";
+
+            var parameters = new[]
+            {
+        new NpgsqlParameter("@Limit", limit),
+        new NpgsqlParameter("@Offset", offset)
+    };
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ActiveGymDTO>(sqlQuery, parameters)
+                .ToListAsync(ct);
+        }
+
 
         // =======================================================
         // UPDATE PARTNER GYM

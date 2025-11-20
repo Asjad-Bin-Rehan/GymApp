@@ -268,7 +268,9 @@ public static class Endpoints
             .MapEndpoint<AddPartnerGym>()
             .MapEndpoint<AddPartnerGymManual>()
             .MapEndpoint<GetPartnerGymById>()
+            .MapEndpoint<GetPartnerGymsByAdminId>()
             .MapEndpoint<ListPartnerGyms>()
+            .MapEndpoint<ListActivePartnerGyms>()
             .MapEndpoint<UpdatePartnerGym>()
             .MapEndpoint<DeletePartnerGym>();
     }

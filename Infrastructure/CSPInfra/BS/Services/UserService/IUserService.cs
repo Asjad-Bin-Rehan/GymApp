@@ -24,6 +24,7 @@ namespace BS.Services.UserService
         Task<bool> IsEmailExistsRaw(string email, CancellationToken ct);
 
         // Authentication
-        Task<ResponseUserDTO?> LoginUserRaw(LoginUserDTO request, CancellationToken ct); // NEW
+        Task<(ResponseUserDTO? user, string? errorMessage)> LoginUserRaw(LoginUserDTO request, CancellationToken ct);
+
     }
 }
