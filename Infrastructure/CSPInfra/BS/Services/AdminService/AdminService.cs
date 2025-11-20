@@ -19,29 +19,59 @@ namespace BS.Services.AdminService
         // ------------------- CREATE -------------------
         public async Task<int> SignUpAdmin(SignUpAdminDTO dto, CancellationToken ct)
         {
-            var passwordHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(dto.password)));
+            await _dbContext.Database.OpenConnectionAsync(ct);
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await using var cmd = conn.CreateCommand();
 
-            var sql = @"
-INSERT INTO admins (username, password_hash, role)
-VALUES (@username, @password_hash, @role)
+            // 1. Check username exists
+            cmd.CommandText = "SELECT COUNT(*) FROM admins WHERE username = @username";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add(new NpgsqlParameter("@username", dto.username));
+
+            var usernameExists = (long)await cmd.ExecuteScalarAsync(ct);
+            if (usernameExists > 0)
+                throw new Exception("USERNAME_EXISTS");
+
+            // 2. Check email exists
+            cmd.CommandText = "SELECT COUNT(*) FROM admins WHERE email = @email";
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add(new NpgsqlParameter("@email", dto.email));
+
+            var emailExists = (long)await cmd.ExecuteScalarAsync(ct);
+            if (emailExists > 0)
+                throw new Exception("EMAIL_EXISTS");
+
+            // 3. Insert admin
+            var passwordHash = Convert.ToBase64String(
+                SHA256.HashData(Encoding.UTF8.GetBytes(dto.password))
+            );
+
+            cmd.CommandText = @"
+INSERT INTO admins (username, password_hash, role, full_name, phone, date_of_birth, email)
+VALUES (@username, @password_hash, @role, @full_name, @phone, @date_of_birth, @email)
 RETURNING admin_id;
 ";
 
-            await using var cmd = _dbContext.Database.GetDbConnection().CreateCommand();
-            cmd.CommandText = sql;
-            cmd.Parameters.Add(new NpgsqlParameter("@username", dto.username ?? (object)DBNull.Value));
+            cmd.Parameters.Clear();
+            cmd.Parameters.Add(new NpgsqlParameter("@username", dto.username));
             cmd.Parameters.Add(new NpgsqlParameter("@password_hash", passwordHash));
-            cmd.Parameters.Add(new NpgsqlParameter("@role", dto.role ?? (object)DBNull.Value));
+            cmd.Parameters.Add(new NpgsqlParameter("@role", dto.role));
+            cmd.Parameters.Add(new NpgsqlParameter("@full_name", dto.full_name ?? "Unknown"));
+            cmd.Parameters.Add(new NpgsqlParameter("@phone", (object?)dto.phone ?? DBNull.Value));
+            cmd.Parameters.Add(new NpgsqlParameter("@date_of_birth", (object?)dto.date_of_birth ?? DBNull.Value));
+            cmd.Parameters.Add(new NpgsqlParameter("@email", dto.email));
 
-            await _dbContext.Database.OpenConnectionAsync(ct);
             var result = await cmd.ExecuteScalarAsync(ct);
             return Convert.ToInt32(result);
         }
 
+
         // ------------------- READ -------------------
         public async Task<AdminDTO?> GetAdminById(int adminId, CancellationToken ct)
         {
-            var sql = "SELECT admin_id, username, role FROM admins WHERE admin_id = @admin_id";
+            var sql = @"SELECT admin_id, username, role, full_name, phone, date_of_birth, join_date, email 
+                        FROM admins 
+                        WHERE admin_id = @admin_id";
 
             await using var cmd = _dbContext.Database.GetDbConnection().CreateCommand();
             cmd.CommandText = sql;
@@ -57,13 +87,19 @@ RETURNING admin_id;
             {
                 admin_id = reader.GetInt32(0),
                 username = reader.GetString(1),
-                role = reader.GetString(2)
+                role = reader.GetString(2),
+                full_name = reader.GetString(3),
+                phone = reader.IsDBNull(4) ? null : reader.GetString(4),
+                date_of_birth = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
+                join_date = reader.GetDateTime(6),
+                email = reader.GetString(7)
             };
         }
 
         public async Task<List<AdminDTO>> ListAllAdmins(CancellationToken ct)
         {
-            var sql = "SELECT admin_id, username, role FROM admins";
+            var sql = @"SELECT admin_id, username, role, full_name, phone, date_of_birth, join_date, email 
+                        FROM admins";
             var list = new List<AdminDTO>();
 
             await using var cmd = _dbContext.Database.GetDbConnection().CreateCommand();
@@ -77,7 +113,12 @@ RETURNING admin_id;
                 {
                     admin_id = reader.GetInt32(0),
                     username = reader.GetString(1),
-                    role = reader.GetString(2)
+                    role = reader.GetString(2),
+                    full_name = reader.GetString(3),
+                    phone = reader.IsDBNull(4) ? null : reader.GetString(4),
+                    date_of_birth = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
+                    join_date = reader.GetDateTime(6),
+                    email = reader.GetString(7)
                 });
             }
 
@@ -93,7 +134,11 @@ RETURNING admin_id;
 UPDATE admins
 SET username = @username,
     password_hash = @password_hash,
-    role = @role
+    role = @role,
+    full_name = @full_name,
+    phone = @phone,
+    date_of_birth = @date_of_birth,
+    email = @email
 WHERE admin_id = @admin_id;
 ";
 
@@ -103,6 +148,10 @@ WHERE admin_id = @admin_id;
             cmd.Parameters.Add(new NpgsqlParameter("@username", dto.username ?? (object)DBNull.Value));
             cmd.Parameters.Add(new NpgsqlParameter("@password_hash", passwordHash));
             cmd.Parameters.Add(new NpgsqlParameter("@role", dto.role ?? (object)DBNull.Value));
+            cmd.Parameters.Add(new NpgsqlParameter("@full_name", dto.full_name ?? "Unknown"));
+            cmd.Parameters.Add(new NpgsqlParameter("@phone", dto.phone ?? (object)DBNull.Value));
+            cmd.Parameters.Add(new NpgsqlParameter("@date_of_birth", dto.date_of_birth ?? (object)DBNull.Value));
+            cmd.Parameters.Add(new NpgsqlParameter("@email", dto.email ?? (object)DBNull.Value));
 
             await _dbContext.Database.OpenConnectionAsync(ct);
             var result = await cmd.ExecuteNonQueryAsync(ct);
@@ -128,7 +177,9 @@ WHERE admin_id = @admin_id;
         {
             var passwordHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(dto.Password)));
 
-            var sql = "SELECT admin_id, username, role FROM admins WHERE username = @username AND password_hash = @password_hash";
+            var sql = @"SELECT admin_id, username, role, full_name, phone, date_of_birth, join_date, email
+                        FROM admins 
+                        WHERE username = @username AND password_hash = @password_hash";
 
             await using var cmd = _dbContext.Database.GetDbConnection().CreateCommand();
             cmd.CommandText = sql;
@@ -150,9 +201,14 @@ WHERE admin_id = @admin_id;
             await reader.ReadAsync(ct);
             return new LoginAdminWithoutJWTResponseDTO
             {
-                AdminId = reader.GetInt32(0),
-                Username = reader.GetString(1),
-                Role = reader.GetString(2),
+                admin_id = reader.GetInt32(0),
+                username = reader.GetString(1),
+                role = reader.GetString(2),
+                full_name = reader.GetString(3),
+                phone = reader.IsDBNull(4) ? null : reader.GetString(4),
+                date_of_birth = reader.IsDBNull(5) ? null : reader.GetDateTime(5),
+                join_date = reader.GetDateTime(6),
+                email = reader.GetString(7),
                 Success = true,
                 Message = "Login successful"
             };

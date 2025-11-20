@@ -26,18 +26,48 @@ namespace CSAPI.Feature.AdminFeature
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(request.username) || string.IsNullOrWhiteSpace(request.password))
+                // Validate inputs
+                if (string.IsNullOrWhiteSpace(request.username) ||
+                    string.IsNullOrWhiteSpace(request.password))
                 {
-                    return ApiResponseHelper.Convert(false, false, "Username and password are required", 400, null);
+                    return ApiResponseHelper.Convert(false, false,
+                        "Username and password are required", 400, null);
                 }
 
+                // Call service
                 var adminId = await svc.SignUpAdmin(request, ct);
 
-                return ApiResponseHelper.Convert(true, true, "Admin created successfully", 200, new { admin_id = adminId });
+                // Success response
+                return ApiResponseHelper.Convert(true, true, "Admin created successfully", 200, new
+                {
+                    admin_id = adminId,
+                    username = request.username,
+                    role = request.role,
+                    full_name = request.full_name,
+                    phone = request.phone,
+                    date_of_birth = request.date_of_birth,
+                    email = request.email,
+                    join_date = DateTime.UtcNow.Date
+                });
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, ex.Message);
+
+                // Validation failures from service
+                if (ex.Message == "USERNAME_EXISTS")
+                {
+                    return ApiResponseHelper.Convert(false, false,
+                        "Username already exists", 400, null);
+                }
+
+                if (ex.Message == "EMAIL_EXISTS")
+                {
+                    return ApiResponseHelper.Convert(false, false,
+                        "Email already exists", 400, null);
+                }
+
+                // Unknown internal failure
                 return ApiResponseHelper.Convert(false, false, "Something went wrong", 500, null);
             }
         }

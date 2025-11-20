@@ -37,10 +37,16 @@ namespace CSAPI.Feature.AdminFeature
 
                 return ApiResponseHelper.Convert(true, true, result.Message, 200, new
                 {
-                    admin_id = result.AdminId,
-                    username = result.Username,
-                    role = result.Role
+                    admin_id = result.admin_id,
+                    username = result.username,
+                    role = result.role,
+                    full_name = result.full_name,
+                    phone = result.phone,
+                    date_of_birth = result.date_of_birth,
+                    join_date = result.join_date,
+                    email = result.email
                 });
+
             }
             catch (Exception ex)
             {
