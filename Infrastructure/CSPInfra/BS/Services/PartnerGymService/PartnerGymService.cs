@@ -154,10 +154,12 @@ namespace BS.Services.PartnerGymService
         {
             var sqlQuery = @"
                 SELECT 
-                    gym_id, gym_name, location_id,
-                    contact_person, phone, partnership_date, status
-                FROM public.partnergyms
-                WHERE gym_id = @gym_id
+                    pg.gym_id, pg.gym_name, pg.location_id,
+                    pg.contact_person, pg.phone, pg.partnership_date, pg.status,
+                    l.latitude, l.longitude
+                FROM public.partnergyms pg
+                LEFT JOIN public.locations l ON pg.location_id = l.location_id
+                WHERE pg.gym_id = @gym_id
             ";
 
             var parameter = new NpgsqlParameter("@gym_id", gymId);
@@ -176,10 +178,12 @@ namespace BS.Services.PartnerGymService
         {
             var sqlQuery = @"
                 SELECT 
-                    gym_id, gym_name, location_id,
-                    contact_person, phone, partnership_date, status
-                FROM public.partnergyms
-                ORDER BY gym_id
+                    pg.gym_id, pg.gym_name, pg.location_id,
+                    pg.contact_person, pg.phone, pg.partnership_date, pg.status,
+                    l.latitude, l.longitude
+                FROM public.partnergyms pg
+                LEFT JOIN public.locations l ON pg.location_id = l.location_id
+                ORDER BY pg.gym_id
                 LIMIT @Limit OFFSET @Offset
             ";
 

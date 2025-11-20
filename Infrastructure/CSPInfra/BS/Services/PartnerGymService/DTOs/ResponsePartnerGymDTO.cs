@@ -9,5 +9,7 @@
         public string phone { get; set; }
         public DateTime? partnership_date { get; set; }
         public string status { get; set; }
+        public double? latitude { get; set; }
+        public double? longitude { get; set; }
     }
 }
