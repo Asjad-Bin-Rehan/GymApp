@@ -44,7 +44,8 @@ namespace CSAPI.Feature.AdminFeature
                     phone = result.phone,
                     date_of_birth = result.date_of_birth,
                     join_date = result.join_date,
-                    email = result.email
+                    email = result.email,
+                    token = result.token
                 });
 
             }

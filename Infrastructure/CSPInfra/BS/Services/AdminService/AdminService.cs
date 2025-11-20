@@ -1,7 +1,11 @@
 ﻿using BS.Services.AdminService.DTOs;
 using DA.AppDbContexts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,10 +14,12 @@ namespace BS.Services.AdminService
     public class AdminService : IAdminService
     {
         private readonly AppDbContext _dbContext;
+        private readonly IConfiguration _configuration;
 
-        public AdminService(AppDbContext dbContext)
+        public AdminService(AppDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
+            _configuration = configuration;
         }
 
         // ------------------- CREATE -------------------
@@ -172,7 +178,7 @@ WHERE admin_id = @admin_id;
             return result > 0;
         }
 
-        // ------------------- LOGIN (without JWT) -------------------
+        // ------------------- LOGIN (with JWT) -------------------
         public async Task<LoginAdminWithoutJWTResponseDTO> LoginAdminWithoutJWT(LoginAdminWithoutJWTDTO dto, CancellationToken ct)
         {
             var passwordHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(dto.Password)));
@@ -199,10 +205,22 @@ WHERE admin_id = @admin_id;
             }
 
             await reader.ReadAsync(ct);
+            
+            var adminId = reader.GetInt32(0);
+            var username = reader.GetString(1);
+            
+            // Generate JWT Token
+            var token = GenerateJwtToken(adminId, username);
+
+            Console.WriteLine("✅ ADMIN LOGIN SUCCESS:");
+            Console.WriteLine($"   Admin ID: {adminId}");
+            Console.WriteLine($"   Username: {username}");
+            Console.WriteLine($"   Token Generated: {token[..50]}..."); // Show first 50 chars
+
             return new LoginAdminWithoutJWTResponseDTO
             {
-                admin_id = reader.GetInt32(0),
-                username = reader.GetString(1),
+                admin_id = adminId,
+                username = username,
                 role = reader.GetString(2),
                 full_name = reader.GetString(3),
                 phone = reader.IsDBNull(4) ? null : reader.GetString(4),
@@ -210,8 +228,33 @@ WHERE admin_id = @admin_id;
                 join_date = reader.GetDateTime(6),
                 email = reader.GetString(7),
                 Success = true,
-                Message = "Login successful"
+                Message = "Login successful",
+                token = token
             };
+        }
+
+        private string GenerateJwtToken(int adminId, string username)
+        {
+            var secret = _configuration["Jwt:Secret"] ?? throw new Exception("JWT Secret not configured");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, adminId.ToString()),
+                new Claim(JwtRegisteredClaimNames.UniqueName, username),
+                new Claim(ClaimTypes.Role, "Admin") // Add admin role claim
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(7),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
