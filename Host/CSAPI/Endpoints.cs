@@ -7,8 +7,10 @@ using CSAPI.Feature.AdminFeature;
 using CSAPI.Feature.LocationFeature;
 using CSAPI.Feature.MemberShipPlanFeature;
 using CSAPI.Feature.PartnerGym;
+using CSAPI.Feature.PointsHistoryFeature;
 using CSAPI.Feature.RedemptionFeature;
 using CSAPI.Feature.RewardCatalogFeature;
+using CSAPI.Feature.SubscriptionFeature;
 using CSAPI.Feature.UserFeature;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
@@ -30,6 +32,8 @@ public static class Endpoints
         endpoints.MapMembershipPlanEndpoints();
         endpoints.MapRewardCatalogEndpoints();
         endpoints.MapRedemptionEndpoints();
+        endpoints.MapSubscriptionEndpoints();
+        endpoints.MapPointsHistoryEndpoints();
 
 
         //// Auto-Increment Code & Paginate
@@ -113,11 +117,12 @@ public static class Endpoints
         var endpoints = app.MapGroup($"/{nameof(IMembershipPlanFeature)}").WithTags("IMembershipPlanFeature");
 
         endpoints.MapPublicGroup()
-            .MapEndpoint<ListAllMembershipPlans>();
-            //.MapEndpoint<GetMembershipPlanById>()
-            //.MapEndpoint<AddMembershipPlanRaw>()
-            //.MapEndpoint<UpdateMembershipPlanRaw>()
-            //.MapEndpoint<DeleteMembershipPlanRaw>();
+            .MapEndpoint<ListAllMembershipPlans>()
+            .MapEndpoint<GetMembershipPlanById>()
+            .MapEndpoint<AddMembershipPlan>()
+            .MapEndpoint<UpdateMembershipPlan>()
+            .MapEndpoint<DeleteMembershipPlan>()
+            ;
     }
 
 
@@ -127,8 +132,15 @@ public static class Endpoints
         var endpoints = app.MapGroup($"/{nameof(IAdminFeature)}").WithTags("IAdminFeature");
 
         endpoints.MapPublicGroup()
-            .MapEndpoint<SignUpAdmin>()                 // POST / Sign up new admin
-            // .MapEndpoint<LoginAdminWithoutJWT>();    // POST / Login admin without JWT
+            .MapEndpoint<SignUpAdmin>()               // POST / Sign up new admin
+            .MapEndpoint<GetAdminById>()              // GET / Get admin by ID
+            .MapEndpoint<ListAllAdmins>()             // GET / List all admins
+
+
+
+
+
+        // .MapEndpoint<LoginAdminWithoutJWT>();    // POST / Login admin without JWT
         ;
     LoginAdminWithoutJWT.Map(endpoints);            // Fix: Call static Map directly since LoginAdminWithoutJWT does not implement IFeature
 }
@@ -160,6 +172,32 @@ public static class Endpoints
             .MapEndpoint<UpdateRedemption>()
             .MapEndpoint<DeleteRedemption>();
     }
+
+    private static void MapSubscriptionEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ISubscriptionFeature)}")
+                           .WithTags("ISubscriptionFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<AddSubscription>()
+            .MapEndpoint<ListAllSubscriptions>()
+            .MapEndpoint<GetSubscriptionById>()
+            .MapEndpoint<UpdateSubscription>()
+            .MapEndpoint<DeleteSubscription>();
+    }
+
+    private static void MapPointsHistoryEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IPointsHistoryFeature)}")
+                           .WithTags("IPointsHistoryFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<GetPointsHistoryByUserId>()
+            .MapEndpoint<ListAllPointsHistory>(); // optional, for admin dashboards
+    }
+
+
+
 
     #region Endpoint Configurations
     private static readonly OpenApiSecurityScheme securityScheme = new()
