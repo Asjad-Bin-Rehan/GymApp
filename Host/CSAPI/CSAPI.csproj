@@ -11,6 +11,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Feature\NewFolder\**" />
+    <Content Remove="Feature\NewFolder\**" />
+    <EmbeddedResource Remove="Feature\NewFolder\**" />
+    <None Remove="Feature\NewFolder\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
@@ -47,10 +54,6 @@
 	  <ProjectReference Include="..\..\Utility\AuthProvider\AuthProvider.csproj" />
 	  <ProjectReference Include="..\..\Utility\CustomHTTP\CustomHTTP.csproj" />
 	  <ProjectReference Include="..\..\Utility\Logger\Logger.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Feature\NewFolder\" />
 	</ItemGroup>
 
 
