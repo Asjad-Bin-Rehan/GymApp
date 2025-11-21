@@ -219,6 +219,41 @@ namespace BS.Services.AccessLogService
                 .ToListAsync(ct);
         }
 
+        // GET ACCESS LOG BY GYM ID
+        public async Task<List<ResponseAccessLogDTO>> GetAccessLogsByGymIdRaw(int gymId, CancellationToken ct)
+        {
+            if (gymId <= 0)
+                throw new ArgumentException("Invalid gymId");
+
+            var sql = @"
+        SELECT log_id, user_id, gym_id, access_time, points_earned
+        FROM public.accesslogs
+        WHERE gym_id = @gym_id
+        ORDER BY access_time DESC;
+    ";
+
+            var param = new NpgsqlParameter("@gym_id", gymId);
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ResponseAccessLogDTO>(sql, param)
+                .ToListAsync(ct);
+        }
+
+
+        // Gym exists
+        public async Task<bool> GymExists(int gymId, CancellationToken ct)
+        {
+            var sql = "SELECT COUNT(*) FROM public.partnergyms WHERE gym_id = @gym_id";
+            var param = new NpgsqlParameter("@gym_id", gymId);
+
+            await using var cmd = _dbContext.Database.GetDbConnection().CreateCommand();
+            cmd.CommandText = sql;
+            cmd.Parameters.Add(param);
+
+            await _dbContext.Database.OpenConnectionAsync(ct);
+            var result = await cmd.ExecuteScalarAsync(ct);
+            return Convert.ToInt32(result) > 0;
+        }
 
 
 

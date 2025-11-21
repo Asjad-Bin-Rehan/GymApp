@@ -295,8 +295,9 @@ public static class Endpoints
         .MapEndpoint<AddAccessLog>()
         .MapEndpoint<GetAccessLogsByUserId>()
         .MapEndpoint<GetAccessLogById>()
-        .MapEndpoint<DeleteAccessLog>();
-}
+        .MapEndpoint<DeleteAccessLog>()
+        .MapEndpoint<GetAccessLogsByGymId>();
+    }
 
     private static void MapMembershipPlanEndpoints(this IEndpointRouteBuilder app)
     {
