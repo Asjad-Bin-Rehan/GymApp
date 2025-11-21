@@ -3,8 +3,10 @@ using BS.Services.AdminService;
 using BS.Services.LocationService;
 using BS.Services.MembershipPlanService;
 using BS.Services.PartnerGymService;
+using BS.Services.PointsHistoryService;
 using BS.Services.RedemptionService;
 using BS.Services.RewardCatalogService;
+using BS.Services.SubscriptionService;
 using BS.Services.UserService;
 using DA;
 using Microsoft.Extensions.Configuration;
@@ -33,6 +35,8 @@ public static class DependencyInjection
         services.TryAddScoped<IAdminService, AdminService>();
         services.TryAddScoped<IRewardCatalogService, RewardCatalogService>();
         services.TryAddScoped<IRedemptionService, RedemptionService>();
+        services.TryAddScoped<ISubscriptionService, SubscriptionService>();
+        services.TryAddScoped<IPointsHistoryService, PointsHistoryService>();
 
         Console.WriteLine($"[Info]----->{nameof(AddServices)} service added");
         return services;

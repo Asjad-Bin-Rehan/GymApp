@@ -94,24 +94,37 @@ SET plan_name = @plan_name,
     description = @description
 WHERE plan_id = @plan_id
 ";
+
             var parameters = new[]
             {
-                new NpgsqlParameter("@plan_name", request.plan_name ?? (object)DBNull.Value),
-                new NpgsqlParameter("@duration_months", request.duration_months),
-                new NpgsqlParameter("@price", request.price),
-                new NpgsqlParameter("@description", request.description ?? (object)DBNull.Value),
-                new NpgsqlParameter("@plan_id", request.plan_id)
-            };
+        new NpgsqlParameter("@plan_name", request.plan_name ?? (object)DBNull.Value),
+        new NpgsqlParameter("@duration_months", request.duration_months),
+        new NpgsqlParameter("@price", request.price),
+        new NpgsqlParameter("@description", request.description ?? (object)DBNull.Value),
+        new NpgsqlParameter("@plan_id", request.plan_id)
+    };
 
-            await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters, ct);
+            var rowsAffected = await _dbContext.Database.ExecuteSqlRawAsync(sql, parameters, ct);
+
+            // If no rows were updated, the plan_id does not exist
+            if (rowsAffected == 0)
+                return false;
+
             return true;
         }
+
 
         public async Task<bool> DeleteMembershipPlanRaw(int planId, CancellationToken ct)
         {
             var sql = "DELETE FROM MembershipPlans WHERE plan_id = @plan_id";
-            await _dbContext.Database.ExecuteSqlRawAsync(sql, new NpgsqlParameter("@plan_id", planId), ct);
-            return true;
+            var param = new NpgsqlParameter("@plan_id", planId);
+
+            // Pass parameters array first, then the CancellationToken
+            var rowsAffected = await _dbContext.Database.ExecuteSqlRawAsync(sql, new object[] { param }, ct);
+
+            return rowsAffected > 0;
         }
+
+
     }
 }
