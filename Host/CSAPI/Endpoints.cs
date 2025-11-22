@@ -4,6 +4,7 @@ using CSAPI.Common.Constant;
 using CSAPI.Common.Filters;
 using CSAPI.Feature.AccessLogFeature;
 using CSAPI.Feature.AdminFeature;
+using CSAPI.Feature.GymImagesFeature;
 using CSAPI.Feature.LocationFeature;
 using CSAPI.Feature.MemberShipPlanFeature;
 using CSAPI.Feature.PartnerGym;
@@ -34,6 +35,7 @@ public static class Endpoints
         endpoints.MapRedemptionEndpoints();
         endpoints.MapSubscriptionEndpoints();
         endpoints.MapPointsHistoryEndpoints();
+        endpoints.MapGymImagesEndpoints();
 
 
         //// Auto-Increment Code & Paginate
@@ -196,6 +198,15 @@ public static class Endpoints
             .MapEndpoint<ListAllPointsHistory>(); // optional, for admin dashboards
     }
 
+    private static void MapGymImagesEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IGymImagesFeature)}")
+                           .WithTags("IGymImagesFeature");
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<AddGymImage>()
+            .MapEndpoint<GetGymImagesByGymId>();
+    }
 
 
 

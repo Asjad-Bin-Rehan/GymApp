@@ -23,6 +23,9 @@ namespace BS.Services.UserService
         Task<bool> IsUsernameExistsRaw(string username, CancellationToken ct);
         Task<bool> IsEmailExistsRaw(string email, CancellationToken ct);
 
+        //suspend
+        Task<bool> SuspendUserRaw(int userId, int adminId, CancellationToken ct);
+
         // Authentication
         Task<(ResponseUserDTO? user, string? errorMessage)> LoginUserRaw(LoginUserDTO request, CancellationToken ct);
 

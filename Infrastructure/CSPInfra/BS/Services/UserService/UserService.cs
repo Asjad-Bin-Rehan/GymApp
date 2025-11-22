@@ -352,6 +352,60 @@ namespace BS.Services.UserService
             return users;
         }
 
+
+        // ============================================================
+        // SUSPEND USER (ONLY SUPERADMIN)
+        // ============================================================
+        public async Task<bool> SuspendUserRaw(int userId, int adminId, CancellationToken ct)
+        {
+            if (userId <= 0) throw new Exception("INVALID_USER_ID");
+            if (adminId <= 0) throw new Exception("INVALID_ADMIN_ID");
+
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
+
+            // 1. Check if admin exists and is SuperAdmin
+            await using var adminCmd = conn.CreateCommand();
+            adminCmd.CommandText = @"
+        SELECT role
+        FROM public.admins
+        WHERE admin_id = @AdminId;
+    ";
+            adminCmd.Parameters.Add(new NpgsqlParameter("@AdminId", adminId));
+
+            var roleObj = await adminCmd.ExecuteScalarAsync(ct);
+            if (roleObj == null) throw new Exception("ADMIN_NOT_FOUND");
+
+            var role = roleObj.ToString();
+            if (role != "SuperAdmin") throw new Exception("UNAUTHORIZED");
+
+            // 2. Check if user exists
+            await using var userCmd = conn.CreateCommand();
+            userCmd.CommandText = @"
+        SELECT status
+        FROM public.users
+        WHERE user_id = @UserId;
+    ";
+            userCmd.Parameters.Add(new NpgsqlParameter("@UserId", userId));
+
+            var statusObj = await userCmd.ExecuteScalarAsync(ct);
+            if (statusObj == null) throw new Exception("USER_NOT_FOUND");
+
+            // 3. Update user's status to 'Inactive'
+            await using var updateCmd = conn.CreateCommand();
+            updateCmd.CommandText = @"
+        UPDATE public.users
+        SET status = 'Inactive'
+        WHERE user_id = @UserId;
+    ";
+            updateCmd.Parameters.Add(new NpgsqlParameter("@UserId", userId));
+
+            var rowsAffected = await updateCmd.ExecuteNonQueryAsync(ct);
+
+            return rowsAffected > 0;
+        }
+
+
         // ============================================================
         // UPDATE USER
         // ============================================================
