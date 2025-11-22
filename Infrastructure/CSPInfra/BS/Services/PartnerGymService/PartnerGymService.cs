@@ -295,5 +295,90 @@ namespace BS.Services.PartnerGymService
 
             return true;
         }
+
+        public async Task<List<ResponsePartnerGymDTO>> GetPartnerGymByStateRaw(string state, CancellationToken ct)
+        {
+            var sql = @"
+        SELECT 
+            pg.gym_id, pg.gym_name, pg.location_id,
+            pg.contact_person, pg.phone, pg.partnership_date, pg.status,
+            l.latitude, l.longitude
+        FROM public.partnergyms pg
+        LEFT JOIN public.locations l ON pg.location_id = l.location_id
+        WHERE LOWER(l.state) = LOWER(@state)
+        ORDER BY pg.gym_id;
+    ";
+
+            var param = new NpgsqlParameter("@state", state);
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ResponsePartnerGymDTO>(sql, param)
+                .ToListAsync(ct);
+        }
+
+
+        public async Task<List<ResponsePartnerGymDTO>> GetPartnerGymByCountryRaw(string country, CancellationToken ct)
+        {
+            var sql = @"
+        SELECT 
+            pg.gym_id, pg.gym_name, pg.location_id,
+            pg.contact_person, pg.phone, pg.partnership_date, pg.status,
+            l.latitude, l.longitude
+        FROM public.partnergyms pg
+        LEFT JOIN public.locations l ON pg.location_id = l.location_id
+        WHERE LOWER(l.country) = LOWER(@country)
+        ORDER BY pg.gym_id;
+    ";
+
+            var param = new NpgsqlParameter("@country", country);
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ResponsePartnerGymDTO>(sql, param)
+                .ToListAsync(ct);
+        }
+
+
+        public async Task<List<ResponsePartnerGymDTO>> GetPartnerGymByCityRaw(string city, CancellationToken ct)
+        {
+            var sql = @"
+        SELECT 
+            pg.gym_id, pg.gym_name, pg.location_id,
+            pg.contact_person, pg.phone, pg.partnership_date, pg.status,
+            l.latitude, l.longitude
+        FROM public.partnergyms pg
+        LEFT JOIN public.locations l ON pg.location_id = l.location_id
+        WHERE LOWER(l.city) = LOWER(@city)
+        ORDER BY pg.gym_id;
+    ";
+
+            var param = new NpgsqlParameter("@city", city);
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ResponsePartnerGymDTO>(sql, param)
+                .ToListAsync(ct);
+        }
+
+
+        public async Task<List<ResponsePartnerGymDTO>> GetPartnerGymByNameRaw(string name, CancellationToken ct)
+        {
+            var sql = @"
+        SELECT 
+            pg.gym_id, pg.gym_name, pg.location_id,
+            pg.contact_person, pg.phone, pg.partnership_date, pg.status,
+            l.latitude, l.longitude
+        FROM public.partnergyms pg
+        LEFT JOIN public.locations l ON pg.location_id = l.location_id
+        WHERE LOWER(pg.gym_name) LIKE LOWER(@name)
+        ORDER BY pg.gym_id;
+    ";
+
+            var param = new NpgsqlParameter("@name", "%" + name + "%");
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ResponsePartnerGymDTO>(sql, param)
+                .ToListAsync(ct);
+        }
+
+
     }
 }

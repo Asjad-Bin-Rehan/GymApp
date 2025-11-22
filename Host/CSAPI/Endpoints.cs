@@ -87,7 +87,11 @@ public static class Endpoints
             .MapEndpoint<ListPartnerGyms>()
             .MapEndpoint<ListActivePartnerGyms>()
             .MapEndpoint<UpdatePartnerGym>()
-            .MapEndpoint<DeletePartnerGym>();
+            .MapEndpoint<DeletePartnerGym>()
+            .MapEndpoint<GetPartnerGymByCity>()
+            .MapEndpoint<GetPartnerGymByCountry>()
+            .MapEndpoint<GetPartnerGymByState>()
+            .MapEndpoint<GetPartnerGymByName>();
     }
 
     private static void MapLocationEndpoints(this IEndpointRouteBuilder app)

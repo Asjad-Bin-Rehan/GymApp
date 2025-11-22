@@ -14,5 +14,10 @@ namespace BS.Services.PartnerGymService
         Task<List<ActiveGymDTO>> ListActivePartnerGymsRaw(int limit, int offset, CancellationToken ct);
         Task<bool> UpdatePartnerGymRaw(UpdatePartnerGymDTO request, CancellationToken ct);
         Task<bool> DeletePartnerGymRaw(int gymId, CancellationToken ct);
+
+        Task<List<ResponsePartnerGymDTO>> GetPartnerGymByStateRaw(string state, CancellationToken ct);
+        Task<List<ResponsePartnerGymDTO>> GetPartnerGymByCountryRaw(string country, CancellationToken ct);
+        Task<List<ResponsePartnerGymDTO>> GetPartnerGymByCityRaw(string city, CancellationToken ct);
+        Task<List<ResponsePartnerGymDTO>> GetPartnerGymByNameRaw(string name, CancellationToken ct);
     }
 }
