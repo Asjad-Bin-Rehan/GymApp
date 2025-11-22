@@ -337,13 +337,13 @@ namespace BS.Services.PartnerGymService
                 .ToListAsync(ct);
         }
 
-        public async Task<List<ResponsePartnerGymDTO>> SearchPartnerGymRaw(SearchPartnerGymRequestDTO req, CancellationToken ct)
+        public async Task<List<RawPartnerGymDTO>> SearchPartnerGymRaw(SearchPartnerGymRequestDTO req, CancellationToken ct)
         {
             var sqlQuery = @"
         SELECT 
             pg.gym_id, pg.gym_name, pg.location_id,
             pg.contact_person, pg.phone, pg.partnership_date, pg.status,
-            l.city, l.state, l.country, l.postal_code, l.address
+            l.country, l.state, l.city, l.postal_code, l.address, l.latitude, l.longitude
         FROM public.partnergyms pg
         LEFT JOIN public.locations l ON pg.location_id = l.location_id
         WHERE 1=1
@@ -382,11 +382,12 @@ namespace BS.Services.PartnerGymService
             }
 
             var result = await _dbContext.Database
-                .SqlQueryRaw<ResponsePartnerGymDTO>(sqlQuery, parameters.ToArray())
+                .SqlQueryRaw<RawPartnerGymDTO>(sqlQuery, parameters.ToArray())
                 .ToListAsync(ct);
 
             return result;
         }
+
 
 
 

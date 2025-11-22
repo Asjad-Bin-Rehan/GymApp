@@ -29,16 +29,20 @@ namespace CSAPI.Feature.PartnerGym
         {
             try
             {
-                // ❌ No filters provided
+                // ❌ Validate at least one filter is provided
                 if (!gym_id.HasValue &&
                     string.IsNullOrWhiteSpace(name) &&
                     string.IsNullOrWhiteSpace(city) &&
                     string.IsNullOrWhiteSpace(state) &&
                     string.IsNullOrWhiteSpace(country))
                 {
-                    return ApiResponseHelper.Convert(false, false,
-                        "At least one search filter is required",
-                        400, null);
+                    return ApiResponseHelper.Convert(
+                        false,  // isApiHandled
+                        false,  // isRequestSuccess
+                        "At least one search filter is required", // message
+                        400,    // statusCode
+                        null    // data
+                    );
                 }
 
                 var req = new SearchPartnerGymRequestDTO
@@ -50,23 +54,53 @@ namespace CSAPI.Feature.PartnerGym
                     country = country
                 };
 
-                var gyms = await svc.SearchPartnerGymRaw(req, ct);
+                var rawGyms = await svc.SearchPartnerGymRaw(req, ct);
 
-                // ❌ No results found
-                if (gyms == null || gyms.Count == 0)
+                // ❌ No gyms found
+                if (rawGyms == null || rawGyms.Count == 0)
                 {
-                    return ApiResponseHelper.Convert(false, false,
+                    return ApiResponseHelper.Convert(
+                        false,
+                        false,
                         "No partner gym found for the given filters",
-                        404, null);
+                        404,
+                        null
+                    );
                 }
 
-                // ✔️ Success
-                return ApiResponseHelper.Convert(true, true, "Success", 200, gyms);
+                // Map RawPartnerGymDTO -> ResponsePartnerGymDTO
+                var responseGyms = rawGyms.Select(g => new ResponsePartnerGymDTO
+                {
+                    gym_id = g.gym_id,
+                    gym_name = g.gym_name,
+                    location_id = g.location_id,
+                    contact_person = g.contact_person,
+                    phone = g.phone,
+                    partnership_date = g.partnership_date,
+                    status = g.status,
+                    latitude = g.latitude,
+                    longitude = g.longitude
+                }).ToList();
+
+                // ✔️ Success response
+                return ApiResponseHelper.Convert(
+                    true,
+                    true,
+                    "Success",
+                    200,
+                    responseGyms
+                );
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, ex.Message);
-                return ApiResponseHelper.Convert(false, false, "Something went wrong", 500, null);
+                return ApiResponseHelper.Convert(
+                    false,
+                    false,
+                    "Something went wrong",
+                    500,
+                    null
+                );
             }
         }
     }
