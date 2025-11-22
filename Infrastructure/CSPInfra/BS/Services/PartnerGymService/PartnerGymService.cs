@@ -337,6 +337,59 @@ namespace BS.Services.PartnerGymService
                 .ToListAsync(ct);
         }
 
+        public async Task<List<ResponsePartnerGymDTO>> SearchPartnerGymRaw(SearchPartnerGymRequestDTO req, CancellationToken ct)
+        {
+            var sqlQuery = @"
+        SELECT 
+            pg.gym_id, pg.gym_name, pg.location_id,
+            pg.contact_person, pg.phone, pg.partnership_date, pg.status,
+            l.city, l.state, l.country, l.postal_code, l.address
+        FROM public.partnergyms pg
+        LEFT JOIN public.locations l ON pg.location_id = l.location_id
+        WHERE 1=1
+    ";
+
+            var parameters = new List<NpgsqlParameter>();
+
+            if (req.gym_id.HasValue)
+            {
+                sqlQuery += " AND pg.gym_id = @gym_id";
+                parameters.Add(new NpgsqlParameter("@gym_id", req.gym_id));
+            }
+
+            if (!string.IsNullOrWhiteSpace(req.name))
+            {
+                sqlQuery += " AND LOWER(pg.gym_name) LIKE LOWER(@name)";
+                parameters.Add(new NpgsqlParameter("@name", $"%{req.name}%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(req.city))
+            {
+                sqlQuery += " AND LOWER(l.city) LIKE LOWER(@city)";
+                parameters.Add(new NpgsqlParameter("@city", $"%{req.city}%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(req.state))
+            {
+                sqlQuery += " AND LOWER(l.state) LIKE LOWER(@state)";
+                parameters.Add(new NpgsqlParameter("@state", $"%{req.state}%"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(req.country))
+            {
+                sqlQuery += " AND LOWER(l.country) LIKE LOWER(@country)";
+                parameters.Add(new NpgsqlParameter("@country", $"%{req.country}%"));
+            }
+
+            var result = await _dbContext.Database
+                .SqlQueryRaw<ResponsePartnerGymDTO>(sqlQuery, parameters.ToArray())
+                .ToListAsync(ct);
+
+            return result;
+        }
+
+
+
 
         public async Task<List<ResponsePartnerGymDTO>> GetPartnerGymByCityRaw(string city, CancellationToken ct)
         {

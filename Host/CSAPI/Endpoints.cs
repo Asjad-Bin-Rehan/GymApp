@@ -91,6 +91,7 @@ public static class Endpoints
             .MapEndpoint<GetPartnerGymByCity>()
             .MapEndpoint<GetPartnerGymByCountry>()
             .MapEndpoint<GetPartnerGymByState>()
+            .MapEndpoint<SearchPartnerGyms>()
             .MapEndpoint<GetPartnerGymByName>();
     }
 
