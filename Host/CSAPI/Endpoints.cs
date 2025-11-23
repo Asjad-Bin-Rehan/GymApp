@@ -37,29 +37,7 @@ public static class Endpoints
         endpoints.MapPointsHistoryEndpoints();
         endpoints.MapGymImagesEndpoints();
 
-
-        //// Auto-Increment Code & Paginate
-        //endpoints.MapAuthEndpoints();
-        //endpoints.MapNextCountEndpoints();
-
-        //// Master (Data) Stepper
-        //endpoints.MapUnitOfMeasureEndpoints();
-        //endpoints.MapQualitativeResultEndpoints();
-        //endpoints.MapInspectionAttributeEndpoints();
-        //endpoints.MapInspectionCharacteristicsEndpoints();
-        //endpoints.MapItemEndpoints();
-        //endpoints.MapInspectionCardEndpoints();
-        //endpoints.MapItemSampleEndpoints();
-        //endpoints.MapItemInspectionCardEndpoints();
-
-        //// Evaluation (Plan) Stepper
-        //endpoints.MapPurchaseQCEndpoints();
-        //endpoints.MapProductionQCEndpoints();
-        //endpoints.MapProductionQAEndpoints();
-        //endpoints.MapPurchaseQCSampleEndpoints();
-        //endpoints.MapProductionQCSampleEndpoints();
-        //endpoints.MapProductionQACavityEndpoints();
-        //endpoints.MapProductionQACavitySampleEndpoints();
+        
     }
 
     private static void MapUserEndpoints(this IEndpointRouteBuilder app)

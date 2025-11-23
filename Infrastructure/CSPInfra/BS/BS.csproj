@@ -19,7 +19,6 @@
 		</PackageReference>
 		<ProjectReference Include="..\..\..\Utility\EndpointExposerGRPC\EndpointGRPC.csproj" />
 		<ProjectReference Include="..\..\..\Utility\Helpers\Helpers.csproj" />
-		<ProjectReference Include="..\..\..\Utility\NATSNotificationSystem\NATSNotificationSystem.csproj" />
 		<ProjectReference Include="..\..\..\Utility\SessionManager\SessionManager.csproj" />
 		<ProjectReference Include="..\..\..\Utility\UserActivity\UserActivity.csproj" />
 		<ProjectReference Include="..\DA\DA.csproj" />
