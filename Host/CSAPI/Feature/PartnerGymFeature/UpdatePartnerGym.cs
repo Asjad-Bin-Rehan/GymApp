@@ -11,11 +11,15 @@ namespace CSAPI.Feature.PartnerGym
     {
         public static void Map(IEndpointRouteBuilder app) => app
             .MapPut($"/{nameof(UpdatePartnerGym)}", Handle)
-            .WithSummary("Update partner gym")
+            .WithSummary("Update partner gym including location and admin")
             .Produces(200)
             .Produces(500);
 
-        private static async Task<IResult> Handle([FromBody] UpdatePartnerGymDTO request, [FromServices] IPartnerGymService svc, ICustomLogger logger, CancellationToken ct)
+        private static async Task<IResult> Handle(
+            [FromBody] UpdatePartnerGymDTO request,
+            [FromServices] IPartnerGymService svc,
+            ICustomLogger logger,
+            CancellationToken ct)
         {
             try
             {

@@ -257,30 +257,99 @@ namespace BS.Services.PartnerGymService
         // =======================================================
         public async Task<bool> UpdatePartnerGymRaw(UpdatePartnerGymDTO request, CancellationToken ct)
         {
-            var sqlQuery = @"
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
+
+            await using var transaction = await conn.BeginTransactionAsync(ct);
+
+            try
+            {
+                // 1️⃣ Get current location_id of this gym
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = "SELECT location_id FROM public.partnergyms WHERE gym_id = @gym_id";
+                    cmd.Parameters.Add(new NpgsqlParameter("@gym_id", request.gym_id));
+
+                    var result = await cmd.ExecuteScalarAsync(ct);
+                    if (result == null) throw new Exception("Gym not found");
+
+                    request.location_id = Convert.ToInt32(result);
+                }
+
+                // 2️⃣ Update Locations table
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = @"
+                UPDATE public.locations
+                SET
+                    country = COALESCE(@country, country),
+                    state = COALESCE(@state, state),
+                    city = COALESCE(@city, city),
+                    postal_code = COALESCE(@postal_code, postal_code),
+                    address = COALESCE(@address, address),
+                    latitude = COALESCE(@latitude, latitude),
+                    longitude = COALESCE(@longitude, longitude),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE location_id = @location_id
+            ";
+                    cmd.Parameters.AddRange(new[]
+                    {
+                new NpgsqlParameter("@location_id", request.location_id),
+                new NpgsqlParameter("@country", request.country ?? (object)DBNull.Value),
+                new NpgsqlParameter("@state", request.state ?? (object)DBNull.Value),
+                new NpgsqlParameter("@city", request.city ?? (object)DBNull.Value),
+                new NpgsqlParameter("@postal_code", request.postal_code ?? (object)DBNull.Value),
+                new NpgsqlParameter("@address", request.address ?? (object)DBNull.Value),
+                new NpgsqlParameter("@latitude", request.latitude ?? (object)DBNull.Value),
+                new NpgsqlParameter("@longitude", request.longitude ?? (object)DBNull.Value)
+            });
+
+                    await cmd.ExecuteNonQueryAsync(ct);
+                }
+
+                // 3️⃣ Update PartnerGyms table
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = @"
                 UPDATE public.partnergyms
                 SET
                     gym_name = COALESCE(@gym_name, gym_name),
-                    location_id = COALESCE(@location_id, location_id),
                     contact_person = COALESCE(@contact_person, contact_person),
                     phone = COALESCE(@phone, phone),
-                    status = COALESCE(@status, status)
+                    status = COALESCE(@status, status),
+                    admin_id = COALESCE(@admin_id, admin_id),
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE gym_id = @gym_id
             ";
-
-            var parameters = new[]
-            {
+                    cmd.Parameters.AddRange(new[]
+                    {
                 new NpgsqlParameter("@gym_id", request.gym_id),
                 new NpgsqlParameter("@gym_name", request.gym_name ?? (object)DBNull.Value),
-                new NpgsqlParameter("@location_id", request.location_id ?? (object)DBNull.Value),
                 new NpgsqlParameter("@contact_person", request.contact_person ?? (object)DBNull.Value),
                 new NpgsqlParameter("@phone", request.phone ?? (object)DBNull.Value),
-                new NpgsqlParameter("@status", request.status ?? (object)DBNull.Value)
-            };
+                new NpgsqlParameter("@status", request.status ?? (object)DBNull.Value),
+                new NpgsqlParameter("@admin_id", request.admin_id ?? (object)DBNull.Value)
+            });
 
-            await _dbContext.Database.ExecuteSqlRawAsync(sqlQuery, parameters, ct);
-            return true;
+                    await cmd.ExecuteNonQueryAsync(ct);
+                }
+
+                // 4️⃣ Commit transaction
+                await transaction.CommitAsync(ct);
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync(ct);
+                throw; // Let upper layer handle exception & logging
+            }
         }
+
+
+
 
         // =======================================================
         // DELETE PARTNER GYM
