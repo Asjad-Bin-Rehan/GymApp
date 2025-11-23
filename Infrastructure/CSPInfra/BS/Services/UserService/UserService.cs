@@ -457,6 +457,28 @@ namespace BS.Services.UserService
             return true;
         }
 
+        public async Task<GetUserCountDTO> GetUserCountRaw(CancellationToken ct)
+        {
+            var sqlQuery = @"
+        SELECT COUNT(*) AS total_users
+        FROM public.users;
+    ";
+
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sqlQuery;
+
+            var resultObj = await cmd.ExecuteScalarAsync(ct);
+
+            return new GetUserCountDTO
+            {
+                total_users = Convert.ToInt32(resultObj)
+            };
+        }
+
+
         // ============================================================
         // VALIDATIONS
         // ============================================================

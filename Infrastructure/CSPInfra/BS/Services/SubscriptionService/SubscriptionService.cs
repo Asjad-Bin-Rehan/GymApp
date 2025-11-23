@@ -123,6 +123,119 @@ WHERE subscription_id = @subscription_id;
             return result > 0;
         }
 
+
+
+
+
+        public class RenewResult
+        {
+            public bool Success { get; set; }
+            public string? ErrorMessage { get; set; }
+        }
+
+
+
+        public async Task<RenewResult> RenewOrUpgradeAsync(RenewSubscriptionDTO request, CancellationToken ct)
+        {
+            var conn = _dbContext.Database.GetDbConnection();
+
+            // ✅ Ensure connection is open
+            if (conn.State != System.Data.ConnectionState.Open)
+                await conn.OpenAsync(ct);
+
+            await using var transaction = await conn.BeginTransactionAsync(ct);
+
+            try
+            {
+                int subscriptionId = 0;
+                int currentPlanId = 0;
+
+                // 1️⃣ Fetch subscription by user_id using the same open connection
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = @"
+                SELECT subscription_id, plan_id
+                FROM subscriptions
+                WHERE user_id = @uid
+                ORDER BY end_date DESC
+                LIMIT 1";
+                    cmd.Parameters.Add(new NpgsqlParameter("@uid", request.user_id));
+
+                    await using var reader = await cmd.ExecuteReaderAsync(ct);
+                    if (!reader.HasRows)
+                        return new RenewResult { Success = false, ErrorMessage = "Subscription not found" };
+
+                    await reader.ReadAsync(ct);
+                    subscriptionId = reader.GetInt32(0);
+                    currentPlanId = reader.GetInt32(1);
+                }
+
+                // 2️⃣ Prevent downgrade
+                if (request.plan_id < currentPlanId)
+                    return new RenewResult { Success = false, ErrorMessage = "Cannot downgrade subscription plan" };
+
+                // 3️⃣ Get new plan duration
+                int months = 0;
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = @"
+                SELECT duration_months
+                FROM membershipplans
+                WHERE plan_id = @plan_id";
+                    cmd.Parameters.Add(new NpgsqlParameter("@plan_id", request.plan_id));
+
+                    var res = await cmd.ExecuteScalarAsync(ct);
+                    if (res == null)
+                        return new RenewResult { Success = false, ErrorMessage = "New plan not found" };
+
+                    months = Convert.ToInt32(res);
+                }
+
+                // 4️⃣ Update subscription
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = @"
+                UPDATE subscriptions
+                SET plan_id = @plan_id,
+                    end_date = CURRENT_DATE + (@months || ' month')::interval
+                WHERE subscription_id = @subscription_id";
+                    cmd.Parameters.Add(new NpgsqlParameter("@plan_id", request.plan_id));
+                    cmd.Parameters.Add(new NpgsqlParameter("@months", months));
+                    cmd.Parameters.Add(new NpgsqlParameter("@subscription_id", subscriptionId));
+
+                    var rows = await cmd.ExecuteNonQueryAsync(ct);
+                    if (rows == 0)
+                        return new RenewResult { Success = false, ErrorMessage = "Failed to update subscription" };
+                }
+
+                // 5️⃣ Add points history
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = @"
+                INSERT INTO pointshistory (user_id, points_change, reason)
+                VALUES (@uid, 20, 'Plan Renewed')";
+                    cmd.Parameters.Add(new NpgsqlParameter("@uid", request.user_id));
+
+                    await cmd.ExecuteNonQueryAsync(ct);
+                }
+
+                await transaction.CommitAsync(ct);
+                return new RenewResult { Success = true };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(ct);
+                return new RenewResult { Success = false, ErrorMessage = "Something went wrong: " + ex.Message };
+            }
+        }
+
+
+
+
         // ------------------- DELETE -------------------
         public async Task<bool> DeleteSubscription(int subscriptionId, CancellationToken ct)
         {

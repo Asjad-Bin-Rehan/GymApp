@@ -29,5 +29,7 @@ namespace BS.Services.UserService
         // Authentication
         Task<(ResponseUserDTO? user, string? errorMessage)> LoginUserRaw(LoginUserDTO request, CancellationToken ct);
 
+        Task<GetUserCountDTO> GetUserCountRaw(CancellationToken ct);
+
     }
 }

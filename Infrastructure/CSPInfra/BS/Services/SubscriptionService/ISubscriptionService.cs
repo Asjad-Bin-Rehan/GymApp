@@ -1,7 +1,8 @@
 ﻿using BS.Services.SubscriptionService.DTOs;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
+using static BS.Services.SubscriptionService.SubscriptionService;
 
 namespace BS.Services.SubscriptionService
 {
@@ -19,5 +20,7 @@ namespace BS.Services.SubscriptionService
 
         // DELETE
         Task<bool> DeleteSubscription(int subscriptionId, CancellationToken ct);
+
+        Task<RenewResult> RenewOrUpgradeAsync(RenewSubscriptionDTO request, CancellationToken ct);
     }
 }

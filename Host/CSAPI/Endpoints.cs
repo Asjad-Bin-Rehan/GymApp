@@ -1,4 +1,5 @@
-﻿using CSAPI.Common;
+﻿using BS.Features.UserFeature;
+using CSAPI.Common;
 using CSAPI.Common.Auth;
 using CSAPI.Common.Constant;
 using CSAPI.Common.Filters;
@@ -49,6 +50,7 @@ public static class Endpoints
             .MapEndpoint<LoginUser>()
             .MapEndpoint<GetUserById>()
             .MapEndpoint<ListAllUsers>()
+            .MapEndpoint<GetUserCount>()
             .MapEndpoint<AddUserRaw>()      // Admin Add
             .MapEndpoint<DeleteUser>();     // Delete
     }
@@ -168,6 +170,7 @@ public static class Endpoints
             .MapEndpoint<ListAllSubscriptions>()
             .MapEndpoint<GetSubscriptionById>()
             .MapEndpoint<UpdateSubscription>()
+            .MapEndpoint<RenewSubscription>()
             .MapEndpoint<DeleteSubscription>();
     }
 
