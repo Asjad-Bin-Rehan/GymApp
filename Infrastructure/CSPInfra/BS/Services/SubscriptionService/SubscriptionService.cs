@@ -150,7 +150,7 @@ WHERE subscription_id = @subscription_id;
                 int subscriptionId = 0;
                 int currentPlanId = 0;
 
-                // 1️⃣ Fetch subscription by user_id using the same open connection
+                // Fetch latest subscription by user_id
                 await using (var cmd = conn.CreateCommand())
                 {
                     cmd.Transaction = transaction;
@@ -171,11 +171,11 @@ WHERE subscription_id = @subscription_id;
                     currentPlanId = reader.GetInt32(1);
                 }
 
-                // 2️⃣ Prevent downgrade
+                // Prevent downgrade
                 if (request.plan_id < currentPlanId)
                     return new RenewResult { Success = false, ErrorMessage = "Cannot downgrade subscription plan" };
 
-                // 3️⃣ Get new plan duration
+                // Get new plan duration
                 int months = 0;
                 await using (var cmd = conn.CreateCommand())
                 {
@@ -193,7 +193,7 @@ WHERE subscription_id = @subscription_id;
                     months = Convert.ToInt32(res);
                 }
 
-                // 4️⃣ Update subscription
+                // Update subscription
                 await using (var cmd = conn.CreateCommand())
                 {
                     cmd.Transaction = transaction;
@@ -211,13 +211,26 @@ WHERE subscription_id = @subscription_id;
                         return new RenewResult { Success = false, ErrorMessage = "Failed to update subscription" };
                 }
 
-                // 5️⃣ Add points history
+                // Insert points history
                 await using (var cmd = conn.CreateCommand())
                 {
                     cmd.Transaction = transaction;
                     cmd.CommandText = @"
                 INSERT INTO pointshistory (user_id, points_change, reason)
                 VALUES (@uid, 20, 'Plan Renewed')";
+                    cmd.Parameters.Add(new NpgsqlParameter("@uid", request.user_id));
+
+                    await cmd.ExecuteNonQueryAsync(ct);
+                }
+
+                // Update total_points in Users table
+                await using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = transaction;
+                    cmd.CommandText = @"
+                UPDATE users
+                SET total_points = total_points + 20
+                WHERE user_id = @uid";
                     cmd.Parameters.Add(new NpgsqlParameter("@uid", request.user_id));
 
                     await cmd.ExecuteNonQueryAsync(ct);
@@ -232,6 +245,7 @@ WHERE subscription_id = @subscription_id;
                 return new RenewResult { Success = false, ErrorMessage = "Something went wrong: " + ex.Message };
             }
         }
+
 
 
 
