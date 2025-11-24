@@ -169,6 +169,7 @@ public static class Endpoints
             .MapEndpoint<AddSubscription>()
             .MapEndpoint<ListAllSubscriptions>()
             .MapEndpoint<GetSubscriptionById>()
+            .MapEndpoint<GetSubscriptionByUserId>()
             .MapEndpoint<UpdateSubscription>()
             .MapEndpoint<RenewSubscription>()
             .MapEndpoint<DeleteSubscription>();

@@ -96,6 +96,52 @@ FROM subscriptions;
             return list;
         }
 
+        public async Task<ResponseSubscriptionWithPlanDTO?> GetSubscriptionByUserId(int userId, CancellationToken ct)
+        {
+            var sql = @"
+SELECT 
+    s.subscription_id, 
+    s.user_id, 
+    s.plan_id, 
+    s.start_date, 
+    s.end_date, 
+    s.payment_status,
+    mp.plan_name,
+    mp.duration_months,
+    mp.price,
+    mp.description
+FROM subscriptions s
+INNER JOIN membershipplans mp ON s.plan_id = mp.plan_id
+WHERE s.user_id = @user_id
+ORDER BY s.end_date DESC
+LIMIT 1;
+";
+
+            await using var cmd = _dbContext.Database.GetDbConnection().CreateCommand();
+            cmd.CommandText = sql;
+            cmd.Parameters.Add(new NpgsqlParameter("@user_id", userId));
+
+            await _dbContext.Database.OpenConnectionAsync(ct);
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+
+            if (!reader.HasRows) return null;
+            await reader.ReadAsync(ct);
+
+            return new ResponseSubscriptionWithPlanDTO
+            {
+                subscription_id = reader.GetInt32(0),
+                user_id = reader.GetInt32(1),
+                plan_id = reader.GetInt32(2),
+                start_date = reader.GetDateTime(3),
+                end_date = reader.IsDBNull(4) ? null : reader.GetDateTime(4),
+                payment_status = reader.GetString(5),
+                plan_name = reader.GetString(6),
+                duration_months = reader.GetInt32(7),
+                price = reader.GetDecimal(8),
+                description = reader.IsDBNull(9) ? string.Empty : reader.GetString(9)
+            };
+        }
+
         // ------------------- UPDATE -------------------
         public async Task<bool> UpdateSubscription(UpdateSubscriptionDTO dto, CancellationToken ct)
         {

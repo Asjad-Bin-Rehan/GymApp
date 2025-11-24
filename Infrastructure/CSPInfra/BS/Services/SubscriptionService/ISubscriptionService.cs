@@ -14,6 +14,7 @@ namespace BS.Services.SubscriptionService
         // READ
         Task<ResponseSubscriptionDTO?> GetSubscriptionById(int subscriptionId, CancellationToken ct);
         Task<List<ResponseSubscriptionDTO>> ListAllSubscriptions(CancellationToken ct);
+        Task<ResponseSubscriptionWithPlanDTO?> GetSubscriptionByUserId(int userId, CancellationToken ct);
 
         // UPDATE
         Task<bool> UpdateSubscription(UpdateSubscriptionDTO dto, CancellationToken ct);
