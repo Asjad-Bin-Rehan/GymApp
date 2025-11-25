@@ -72,6 +72,26 @@ RETURNING admin_id;
         }
 
 
+        public async Task<ResponseTotalRevenueDTO> GetTotalRevenueRaw(CancellationToken ct)
+        {
+            var sql = @"
+            SELECT 
+                COALESCE(SUM(mp.price), 0) AS total_revenue
+            FROM public.subscriptions s
+            JOIN public.membershipplans mp 
+                ON s.plan_id = mp.plan_id
+            WHERE s.payment_status = 'Paid'
+        ";
+
+            var result = await _dbContext.Database
+                .SqlQueryRaw<ResponseTotalRevenueDTO>(sql)
+                .FirstAsync(ct);
+
+            return result;
+        }
+
+
+
         // ------------------- READ -------------------
         public async Task<AdminDTO?> GetAdminById(int adminId, CancellationToken ct)
         {

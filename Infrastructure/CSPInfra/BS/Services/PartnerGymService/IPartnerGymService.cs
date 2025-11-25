@@ -20,6 +20,7 @@ namespace BS.Services.PartnerGymService
         Task<List<ResponsePartnerGymDTO>> GetPartnerGymByCityRaw(string city, CancellationToken ct);
         Task<List<ResponsePartnerGymDTO>> GetPartnerGymByNameRaw(string name, CancellationToken ct);
         Task<List<RawPartnerGymDTO>> SearchPartnerGymRaw(SearchPartnerGymRequestDTO req, CancellationToken ct);
+        Task<GetPartnerGymsCountDTO> GetPartnerGymsCountRaw(CancellationToken ct);
 
 
     }

@@ -1,4 +1,5 @@
-﻿using BS.Features.UserFeature;
+﻿using BS.Features.PartnerGymFeature;
+using BS.Features.UserFeature;
 using CSAPI.Common;
 using CSAPI.Common.Auth;
 using CSAPI.Common.Constant;
@@ -11,6 +12,7 @@ using CSAPI.Feature.MemberShipPlanFeature;
 using CSAPI.Feature.PartnerGym;
 using CSAPI.Feature.PointsHistoryFeature;
 using CSAPI.Feature.RedemptionFeature;
+using CSAPI.Feature.RevenueFeature;
 using CSAPI.Feature.RewardCatalogFeature;
 using CSAPI.Feature.SubscriptionFeature;
 using CSAPI.Feature.UserFeature;
@@ -74,7 +76,8 @@ public static class Endpoints
             .MapEndpoint<GetPartnerGymByCountry>()
             .MapEndpoint<GetPartnerGymByState>()
             .MapEndpoint<SearchPartnerGyms>()
-            .MapEndpoint<GetPartnerGymByName>();
+            .MapEndpoint<GetPartnerGymByName>()
+            .MapEndpoint<GetPartnerGymsCount>();
     }
 
     private static void MapLocationEndpoints(this IEndpointRouteBuilder app)
@@ -124,6 +127,7 @@ public static class Endpoints
             .MapEndpoint<SignUpAdmin>()               // POST / Sign up new admin
             .MapEndpoint<GetAdminById>()              // GET / Get admin by ID
             .MapEndpoint<ListAllAdmins>()             // GET / List all admins
+            .MapEndpoint<GetTotalRevenue>()
 
 
 

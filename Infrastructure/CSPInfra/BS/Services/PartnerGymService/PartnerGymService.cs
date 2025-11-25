@@ -252,6 +252,29 @@ namespace BS.Services.PartnerGymService
         }
 
 
+        public async Task<GetPartnerGymsCountDTO> GetPartnerGymsCountRaw(CancellationToken ct)
+        {
+            var sqlQuery = @"
+        SELECT COUNT(*) AS total_gyms
+        FROM public.partner_gyms;
+    ";
+
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sqlQuery;
+
+            var resultObj = await cmd.ExecuteScalarAsync(ct);
+
+            return new GetPartnerGymsCountDTO
+            {
+                total_gyms = Convert.ToInt32(resultObj)
+            };
+        }
+
+
+
         // =======================================================
         // UPDATE PARTNER GYM
         // =======================================================

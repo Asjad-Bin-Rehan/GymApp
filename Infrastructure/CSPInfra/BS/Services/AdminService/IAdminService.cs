@@ -19,5 +19,7 @@ namespace BS.Services.AdminService
 
         // Login without JWT
         Task<LoginAdminWithoutJWTResponseDTO> LoginAdminWithoutJWT(LoginAdminWithoutJWTDTO request, CancellationToken ct);
+
+        Task<ResponseTotalRevenueDTO> GetTotalRevenueRaw(CancellationToken ct);
     }
 }
