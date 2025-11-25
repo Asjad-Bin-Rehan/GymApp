@@ -1,4 +1,5 @@
 ﻿using BS.Services.UserService.DTOs;
+using static BS.Services.UserService.UserService;
 
 namespace BS.Services.UserService
 {
@@ -24,12 +25,16 @@ namespace BS.Services.UserService
         Task<bool> IsEmailExistsRaw(string email, CancellationToken ct);
 
         //suspend
-        Task<bool> SuspendUserRaw(int userId, int adminId, CancellationToken ct);
+        //Task<bool> SuspendUserRaw(int userId, int adminId, CancellationToken ct);
 
         // Authentication
         Task<(ResponseUserDTO? user, string? errorMessage)> LoginUserRaw(LoginUserDTO request, CancellationToken ct);
 
         Task<GetUserCountDTO> GetUserCountRaw(CancellationToken ct);
+
+        Task<SuspendUserResult> SuspendUserRaw(SuspendUserDTO request, CancellationToken ct);
+        Task<ActivateUserResult> ActivateUserRaw(SuspendUserDTO request, CancellationToken ct);
+
 
     }
 }

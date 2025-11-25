@@ -51,6 +51,8 @@ public static class Endpoints
             .MapEndpoint<GetUserById>()
             .MapEndpoint<ListAllUsers>()
             .MapEndpoint<GetUserCount>()
+            .MapEndpoint<SuspendUser>()
+            .MapEndpoint<ActivateUser>()
             .MapEndpoint<AddUserRaw>()      // Admin Add
             .MapEndpoint<DeleteUser>();     // Delete
     }

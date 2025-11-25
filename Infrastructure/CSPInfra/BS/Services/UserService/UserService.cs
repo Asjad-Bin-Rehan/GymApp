@@ -175,7 +175,7 @@ namespace BS.Services.UserService
             if (status != "Active")
             {
                 return (null, status == "Inactive"
-                    ? "Your account is inactive. Please contact support."
+                    ? "Your account is inactive/suspended. Please contact support: info@gymverse.com"
                     : "Your account has expired. Please renew your membership.");
             }
 
@@ -352,58 +352,220 @@ namespace BS.Services.UserService
             return users;
         }
 
-
-        // ============================================================
-        // SUSPEND USER (ONLY SUPERADMIN)
-        // ============================================================
-        public async Task<bool> SuspendUserRaw(int userId, int adminId, CancellationToken ct)
+        public enum SuspendUserResult
         {
-            if (userId <= 0) throw new Exception("INVALID_USER_ID");
-            if (adminId <= 0) throw new Exception("INVALID_ADMIN_ID");
+            Success,
+            InvalidRequest,
+            InvalidUserId,
+            InvalidAdminId,
+            AdminNotFound,
+            Unauthorized,
+            UserNotFound,
+            Failed
+        }
+
+
+        public async Task<SuspendUserResult> SuspendUserRaw(SuspendUserDTO request, CancellationToken ct)
+        {
+            if (request == null) return SuspendUserResult.InvalidRequest;
+            if (request.user_id <= 0) return SuspendUserResult.InvalidUserId;
+            if (request.admin_id <= 0) return SuspendUserResult.InvalidAdminId;
 
             await using var conn = _dbContext.Database.GetDbConnection();
             await conn.OpenAsync(ct);
 
-            // 1. Check if admin exists and is SuperAdmin
-            await using var adminCmd = conn.CreateCommand();
-            adminCmd.CommandText = @"
-        SELECT role
-        FROM public.admins
-        WHERE admin_id = @AdminId;
-    ";
-            adminCmd.Parameters.Add(new NpgsqlParameter("@AdminId", adminId));
+            await using var tx = await conn.BeginTransactionAsync(ct);
 
-            var roleObj = await adminCmd.ExecuteScalarAsync(ct);
-            if (roleObj == null) throw new Exception("ADMIN_NOT_FOUND");
+            try
+            {
+                // 1️⃣ CHECK ADMIN ROLE
+                await using (var adminCmd = conn.CreateCommand())
+                {
+                    adminCmd.Transaction = tx;
+                    adminCmd.CommandText = @"SELECT role FROM public.admins WHERE admin_id = @AdminId";
+                    adminCmd.Parameters.Add(new NpgsqlParameter("@AdminId", request.admin_id));
 
-            var role = roleObj.ToString();
-            if (role != "SuperAdmin") throw new Exception("UNAUTHORIZED");
+                    var roleObj = await adminCmd.ExecuteScalarAsync(ct);
+                    if (roleObj == null) return SuspendUserResult.AdminNotFound;
+                    if (roleObj.ToString() != "SuperAdmin") return SuspendUserResult.Unauthorized;
+                }
 
-            // 2. Check if user exists
-            await using var userCmd = conn.CreateCommand();
-            userCmd.CommandText = @"
-        SELECT status
-        FROM public.users
-        WHERE user_id = @UserId;
-    ";
-            userCmd.Parameters.Add(new NpgsqlParameter("@UserId", userId));
+                // 2️⃣ CHECK USER EXISTS + GET POINTS
+                int currentPoints;
+                await using (var userCmd = conn.CreateCommand())
+                {
+                    userCmd.Transaction = tx;
+                    userCmd.CommandText = @"SELECT total_points FROM public.users WHERE user_id = @UserId";
+                    userCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
 
-            var statusObj = await userCmd.ExecuteScalarAsync(ct);
-            if (statusObj == null) throw new Exception("USER_NOT_FOUND");
+                    var ptObj = await userCmd.ExecuteScalarAsync(ct);
+                    if (ptObj == null) return SuspendUserResult.UserNotFound;
 
-            // 3. Update user's status to 'Inactive'
-            await using var updateCmd = conn.CreateCommand();
-            updateCmd.CommandText = @"
-        UPDATE public.users
-        SET status = 'Inactive'
-        WHERE user_id = @UserId;
-    ";
-            updateCmd.Parameters.Add(new NpgsqlParameter("@UserId", userId));
+                    currentPoints = Convert.ToInt32(ptObj);
+                }
 
-            var rowsAffected = await updateCmd.ExecuteNonQueryAsync(ct);
+                // 3️⃣ UPDATE STATUS
+                await using (var updateStatusCmd = conn.CreateCommand())
+                {
+                    updateStatusCmd.Transaction = tx;
+                    updateStatusCmd.CommandText = @"
+                UPDATE public.users SET status = 'Inactive'
+                WHERE user_id = @UserId;
+            ";
+                    updateStatusCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
+                    await updateStatusCmd.ExecuteNonQueryAsync(ct);
+                }
 
-            return rowsAffected > 0;
+                // 4️⃣ DEDUCT POINTS
+                int newPoints = Math.Max(0, currentPoints - 100);
+                await using (var pointsCmd = conn.CreateCommand())
+                {
+                    pointsCmd.Transaction = tx;
+                    pointsCmd.CommandText = @"
+                UPDATE public.users
+                SET total_points = @NewPoints
+                WHERE user_id = @UserId;
+            ";
+                    pointsCmd.Parameters.Add(new NpgsqlParameter("@NewPoints", newPoints));
+                    pointsCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
+                    await pointsCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                // 5️⃣ INSERT HISTORY
+                await using (var historyCmd = conn.CreateCommand())
+                {
+                    historyCmd.Transaction = tx;
+                    historyCmd.CommandText = @"
+                INSERT INTO public.pointshistory (user_id, points_change, reason)
+                VALUES (@UserId, @Points, @Reason);
+            ";
+                    historyCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
+                    historyCmd.Parameters.Add(new NpgsqlParameter("@Points", -100));
+                    historyCmd.Parameters.Add(new NpgsqlParameter("@Reason", "User suspended by SuperAdmin"));
+
+                    await historyCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                await tx.CommitAsync(ct);
+                return SuspendUserResult.Success;
+            }
+            catch
+            {
+                await tx.RollbackAsync(ct);
+                return SuspendUserResult.Failed;
+            }
         }
+
+        public enum ActivateUserResult
+        {
+            Success,
+            InvalidRequest,
+            InvalidUserId,
+            InvalidAdminId,
+            AdminNotFound,
+            Unauthorized,
+            UserNotFound,
+            Failed
+        }
+
+
+        public async Task<ActivateUserResult> ActivateUserRaw(SuspendUserDTO request, CancellationToken ct)
+        {
+            if (request == null) return ActivateUserResult.InvalidRequest;
+            if (request.user_id <= 0) return ActivateUserResult.InvalidUserId;
+            if (request.admin_id <= 0) return ActivateUserResult.InvalidAdminId;
+
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
+
+            await using var tx = await conn.BeginTransactionAsync(ct);
+
+            try
+            {
+                // 1️⃣ CHECK ADMIN ROLE
+                await using (var adminCmd = conn.CreateCommand())
+                {
+                    adminCmd.Transaction = tx;
+                    adminCmd.CommandText = @"SELECT role FROM public.admins WHERE admin_id = @AdminId";
+                    adminCmd.Parameters.Add(new NpgsqlParameter("@AdminId", request.admin_id));
+
+                    var roleObj = await adminCmd.ExecuteScalarAsync(ct);
+                    if (roleObj == null) return ActivateUserResult.AdminNotFound;
+                    if (roleObj.ToString() != "SuperAdmin") return ActivateUserResult.Unauthorized;
+                }
+
+                // 2️⃣ CHECK USER EXISTS + GET CURRENT POINTS
+                int currentPoints;
+                await using (var userCmd = conn.CreateCommand())
+                {
+                    userCmd.Transaction = tx;
+                    userCmd.CommandText = @"SELECT total_points FROM public.users WHERE user_id = @UserId";
+                    userCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
+
+                    var ptObj = await userCmd.ExecuteScalarAsync(ct);
+                    if (ptObj == null) return ActivateUserResult.UserNotFound;
+
+                    currentPoints = Convert.ToInt32(ptObj);
+                }
+
+                // 3️⃣ UPDATE USER STATUS TO ACTIVE
+                await using (var updateStatusCmd = conn.CreateCommand())
+                {
+                    updateStatusCmd.Transaction = tx;
+                    updateStatusCmd.CommandText = @"
+                UPDATE public.users
+                SET status = 'Active'
+                WHERE user_id = @UserId;
+            ";
+
+                    updateStatusCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
+                    await updateStatusCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                // 4️⃣ ADD 100 POINTS BACK
+                int newPoints = currentPoints + 100;
+                await using (var pointsCmd = conn.CreateCommand())
+                {
+                    pointsCmd.Transaction = tx;
+                    pointsCmd.CommandText = @"
+                UPDATE public.users
+                SET total_points = @NewPoints
+                WHERE user_id = @UserId;
+            ";
+
+                    pointsCmd.Parameters.Add(new NpgsqlParameter("@NewPoints", newPoints));
+                    pointsCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
+
+                    await pointsCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                // 5️⃣ INSERT POINT HISTORY RECORD
+                await using (var historyCmd = conn.CreateCommand())
+                {
+                    historyCmd.Transaction = tx;
+                    historyCmd.CommandText = @"
+                INSERT INTO public.pointshistory (user_id, points_change, reason)
+                VALUES (@UserId, @Points, @Reason);
+            ";
+
+                    historyCmd.Parameters.Add(new NpgsqlParameter("@UserId", request.user_id));
+                    historyCmd.Parameters.Add(new NpgsqlParameter("@Points", 100));
+                    historyCmd.Parameters.Add(new NpgsqlParameter("@Reason", "User activated by SuperAdmin"));
+
+                    await historyCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                await tx.CommitAsync(ct);
+                return ActivateUserResult.Success;
+            }
+            catch
+            {
+                await tx.RollbackAsync(ct);
+                return ActivateUserResult.Failed;
+            }
+        }
+
+
 
 
         // ============================================================
