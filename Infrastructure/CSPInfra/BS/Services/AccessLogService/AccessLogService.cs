@@ -239,6 +239,34 @@ namespace BS.Services.AccessLogService
                 .ToListAsync(ct);
         }
 
+        public async Task<List<ResponseAccessLogViewDTO>> GetAccessLogsByGymIdView(int gymId, CancellationToken ct)
+        {
+            if (gymId <= 0)
+                throw new ArgumentException("Invalid gymId");
+
+            var sql = @"
+        SELECT 
+            log_id,
+            user_id,
+            user_name,
+            gym_id,
+            gym_name,
+            access_time,
+            points_earned
+        FROM view_accesslogs_with_details
+        WHERE gym_id = @gym_id
+        ORDER BY access_time DESC;
+    ";
+
+            var param = new NpgsqlParameter("@gym_id", gymId);
+
+            return await _dbContext.Database
+                .SqlQueryRaw<ResponseAccessLogViewDTO>(sql, param)
+                .ToListAsync(ct);
+        }
+
+
+
 
         // Gym exists
         public async Task<bool> GymExists(int gymId, CancellationToken ct)

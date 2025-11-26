@@ -102,6 +102,7 @@ public static class Endpoints
         .MapEndpoint<GetAccessLogsByUserId>()
         .MapEndpoint<GetAccessLogById>()
         .MapEndpoint<DeleteAccessLog>()
+        .MapEndpoint<GetAccessLogsByGymId_View>()
         .MapEndpoint<GetAccessLogsByGymId>();
     }
 
