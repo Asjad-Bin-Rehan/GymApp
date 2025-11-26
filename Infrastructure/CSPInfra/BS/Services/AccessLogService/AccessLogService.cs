@@ -49,7 +49,7 @@ namespace BS.Services.AccessLogService
 
     // 2. Validate distance (within 300 meters)
     double distance = CalculateDistance(request.device_lat, request.device_lon, gymLat, gymLon);
-    if (distance > 0.3)
+    if (distance > 2.0)
         return new AccessLogResultDTO { Success = false, PointsEarned = 0, Message = "User is not near the gym. Please verify gym ID." };
 
     // 3. Check if user already checked in today

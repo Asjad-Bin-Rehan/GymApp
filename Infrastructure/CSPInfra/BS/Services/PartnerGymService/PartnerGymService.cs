@@ -256,7 +256,7 @@ namespace BS.Services.PartnerGymService
         {
             var sqlQuery = @"
         SELECT COUNT(*) AS total_gyms
-        FROM public.partner_gyms;
+        FROM public.partnergyms;
     ";
 
             await using var conn = _dbContext.Database.GetDbConnection();
