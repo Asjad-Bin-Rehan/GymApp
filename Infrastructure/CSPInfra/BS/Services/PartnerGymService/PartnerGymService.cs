@@ -208,7 +208,7 @@ namespace BS.Services.PartnerGymService
                 SELECT 
                     pg.gym_id, pg.gym_name, pg.location_id,
                     pg.contact_person, pg.phone, pg.partnership_date, pg.status,
-                    l.latitude, l.longitude, l.address, l.state, l.city, l.country
+                    l.latitude, l.longitude
                 FROM public.partnergyms pg
                 LEFT JOIN public.locations l ON pg.location_id = l.location_id
                 ORDER BY pg.gym_id
