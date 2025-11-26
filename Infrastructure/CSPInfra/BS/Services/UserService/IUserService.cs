@@ -35,6 +35,10 @@ namespace BS.Services.UserService
         Task<SuspendUserResult> SuspendUserRaw(SuspendUserDTO request, CancellationToken ct);
         Task<ActivateUserResult> ActivateUserRaw(SuspendUserDTO request, CancellationToken ct);
 
+        //views
+        Task<List<ViewUserMembershipDTO>> ListUsersWithMembershipRaw(int limit, int offset, CancellationToken ct);
+
+
 
     }
 }

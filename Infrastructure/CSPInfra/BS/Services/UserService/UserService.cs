@@ -352,6 +352,62 @@ namespace BS.Services.UserService
             return users;
         }
 
+
+        public async Task<List<ViewUserMembershipDTO>> ListUsersWithMembershipRaw(int limit, int offset, CancellationToken ct)
+        {
+            var sqlQuery = @"
+        SELECT 
+            user_id, username, full_name, email,
+            phone, date_of_birth, join_date, status, total_points,
+            subscription_id, plan_id, membership_start_date, 
+            membership_end_date, payment_status,
+            plan_name, duration_months, price
+        FROM public.view_user_with_membership
+        ORDER BY user_id
+        LIMIT @Limit OFFSET @Offset;
+    ";
+
+            await using var conn = _dbContext.Database.GetDbConnection();
+            await conn.OpenAsync(ct);
+
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = sqlQuery;
+            cmd.Parameters.Add(new NpgsqlParameter("@Limit", limit));
+            cmd.Parameters.Add(new NpgsqlParameter("@Offset", offset));
+
+            var users = new List<ViewUserMembershipDTO>();
+
+            await using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                users.Add(new ViewUserMembershipDTO
+                {
+                    user_id = reader.GetInt32(reader.GetOrdinal("user_id")),
+                    username = reader.GetString(reader.GetOrdinal("username")),
+                    full_name = reader.GetString(reader.GetOrdinal("full_name")),
+                    email = reader.GetString(reader.GetOrdinal("email")),
+                    phone = reader.IsDBNull(reader.GetOrdinal("phone")) ? null : reader.GetString(reader.GetOrdinal("phone")),
+                    date_of_birth = reader.IsDBNull(reader.GetOrdinal("date_of_birth")) ? null : reader.GetDateTime(reader.GetOrdinal("date_of_birth")),
+                    join_date = reader.GetDateTime(reader.GetOrdinal("join_date")),
+                    status = reader.GetString(reader.GetOrdinal("status")),
+                    total_points = reader.GetInt32(reader.GetOrdinal("total_points")),
+
+                    subscription_id = reader.IsDBNull(reader.GetOrdinal("subscription_id")) ? null : reader.GetInt32(reader.GetOrdinal("subscription_id")),
+                    plan_id = reader.IsDBNull(reader.GetOrdinal("plan_id")) ? null : reader.GetInt32(reader.GetOrdinal("plan_id")),
+                    membership_start_date = reader.IsDBNull(reader.GetOrdinal("membership_start_date")) ? null : reader.GetDateTime(reader.GetOrdinal("membership_start_date")),
+                    membership_end_date = reader.IsDBNull(reader.GetOrdinal("membership_end_date")) ? null : reader.GetDateTime(reader.GetOrdinal("membership_end_date")),
+                    payment_status = reader.IsDBNull(reader.GetOrdinal("payment_status")) ? null : reader.GetString(reader.GetOrdinal("payment_status")),
+
+                    plan_name = reader.IsDBNull(reader.GetOrdinal("plan_name")) ? null : reader.GetString(reader.GetOrdinal("plan_name")),
+                    duration_months = reader.IsDBNull(reader.GetOrdinal("duration_months")) ? null : reader.GetInt32(reader.GetOrdinal("duration_months")),
+                    price = reader.IsDBNull(reader.GetOrdinal("price")) ? null : reader.GetDecimal(reader.GetOrdinal("price")),
+                });
+            }
+
+            return users;
+        }
+
+
         public enum SuspendUserResult
         {
             Success,

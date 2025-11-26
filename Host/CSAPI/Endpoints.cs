@@ -52,6 +52,7 @@ public static class Endpoints
             .MapEndpoint<LoginUser>()
             .MapEndpoint<GetUserById>()
             .MapEndpoint<ListAllUsers>()
+            .MapEndpoint<ListUsersWithMembership>()
             .MapEndpoint<GetUserCount>()
             .MapEndpoint<SuspendUser>()
             .MapEndpoint<ActivateUser>()
