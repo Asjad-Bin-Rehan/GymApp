@@ -1,7 +1,4 @@
-﻿
-
-
-using DA.AppDbContexts;
+﻿using DA.AppDbContexts;
 using DM.DomainModels;
 using GenericRepository;
 
@@ -15,6 +12,9 @@ namespace DA
         {
             _db = db;
         }
+
+        public IGenericRepository<Location, string> location => new GenericRepository<Location, string>(_db);
+        public IGenericRepository<Location_From_Location, string> location_from_location => new GenericRepository<Location_From_Location, string>(_db);
 
         public IGenericRepository<Encrypted_Credentials, string> encrypted_credentials => new GenericRepository<Encrypted_Credentials, string>(_db);
         public IGenericRepository<Production_QC, string> production_qc => new GenericRepository<Production_QC, string>(_db);

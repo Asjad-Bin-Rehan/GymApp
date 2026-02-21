@@ -5,6 +5,9 @@ namespace DA
 {
     public interface IUnitOfWork
     {
+        IGenericRepository<Location, string> location { get; }
+        IGenericRepository<Location_From_Location, string> location_from_location { get; }
+
         IGenericRepository<Encrypted_Credentials, string> encrypted_credentials { get; }
         IGenericRepository<Inspection_Attribute, string> inspection_attribute { get; }
         IGenericRepository<Inspection_Characteristic, string> inspection_characteristic { get; }

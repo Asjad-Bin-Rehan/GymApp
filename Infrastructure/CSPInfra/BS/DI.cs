@@ -5,6 +5,7 @@ using BS.Services.InspectionCharactersticService;
 using BS.Services.ItemCardService;
 using BS.Services.ItemInspectionCardService;
 using BS.Services.ItemSampleService;
+using BS.Services.LocationService;
 using BS.Services.NextIntCodeService;
 using BS.Services.ProductionQACavitySampleService;
 using BS.Services.ProductionQACavityService;
@@ -34,6 +35,8 @@ public static class DependencyInjection
 
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.TryAddScoped<ILocationService, LocationService>();
+
         services.TryAddScoped<IAuthService, AuthService>();
         services.TryAddScoped<IProductionQACavitySampleService, ProductionQACavitySampleService>();
         services.TryAddScoped<IProductionQACavityService, ProductionQACavityService>();
