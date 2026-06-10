@@ -1,4 +1,7 @@
 ﻿using BS.Services.AuthService;
+using BS.Services.BookingService;
+using BS.Services.CourtService;
+using BS.Services.CustomerProfileService;
 using BS.Services.InspectionAttributeService;
 using BS.Services.InspectionCardService;
 using BS.Services.InspectionCharactersticService;
@@ -6,7 +9,14 @@ using BS.Services.ItemCardService;
 using BS.Services.ItemInspectionCardService;
 using BS.Services.ItemSampleService;
 using BS.Services.LocationService;
+using BS.Services.LocationHasLocationService;
 using BS.Services.NextIntCodeService;
+using BS.Services.OrganizationService;
+using BS.Services.PricingService;
+using BS.Services.SlotService;
+using BS.Services.TenantService;
+using BS.Services.UserService;
+using BS.Services.VenueService;
 using BS.Services.ProductionQACavitySampleService;
 using BS.Services.ProductionQACavityService;
 using BS.Services.ProductionQAService;
@@ -36,6 +46,16 @@ public static class DependencyInjection
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.TryAddScoped<ILocationService, LocationService>();
+        services.TryAddScoped<ILocationFromLocationService, LocationFromLocationService>();
+        services.TryAddScoped<IBookingService, BookingService>();
+        services.TryAddScoped<ICourtService, CourtService>();
+        services.TryAddScoped<ICustomerProfileService, CustomerProfileService>();
+        services.TryAddScoped<IOrganizationService, OrganizationService>();
+        services.TryAddScoped<IPricingService, PricingService>();
+        services.TryAddScoped<ISlotService, SlotService>();
+        services.TryAddScoped<ITenantService, TenantService>();
+        services.TryAddScoped<IUserService, UserService>();
+        services.TryAddScoped<IVenueService, VenueService>();
 
         services.TryAddScoped<IAuthService, AuthService>();
         services.TryAddScoped<IProductionQACavitySampleService, ProductionQACavitySampleService>();

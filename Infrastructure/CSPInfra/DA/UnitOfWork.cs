@@ -16,6 +16,16 @@ namespace DA
         public IGenericRepository<Location, string> location => new GenericRepository<Location, string>(_db);
         public IGenericRepository<Location_From_Location, string> location_from_location => new GenericRepository<Location_From_Location, string>(_db);
 
+        public IGenericRepository<Booking, string> booking => new GenericRepository<Booking, string>(_db);
+        public IGenericRepository<Court, string> court => new GenericRepository<Court, string>(_db);
+        public IGenericRepository<CustomerProfile, string> customer_profile => new GenericRepository<CustomerProfile, string>(_db);
+        public IGenericRepository<Organization, string> organization => new GenericRepository<Organization, string>(_db);
+        public IGenericRepository<Pricing, string> pricing => new GenericRepository<Pricing, string>(_db);
+        public IGenericRepository<Slot, string> slot => new GenericRepository<Slot, string>(_db);
+        public IGenericRepository<Tenant, string> tenant => new GenericRepository<Tenant, string>(_db);
+        public IGenericRepository<User, string> user => new GenericRepository<User, string>(_db);
+        public IGenericRepository<Venue, string> venue => new GenericRepository<Venue, string>(_db);
+
         public IGenericRepository<Encrypted_Credentials, string> encrypted_credentials => new GenericRepository<Encrypted_Credentials, string>(_db);
         public IGenericRepository<Production_QC, string> production_qc => new GenericRepository<Production_QC, string>(_db);
         public IGenericRepository<Production_QC_Sample, string> production_qc_sample => new GenericRepository<Production_QC_Sample, string>(_db);
