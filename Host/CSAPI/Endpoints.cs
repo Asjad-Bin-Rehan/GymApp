@@ -6,6 +6,8 @@ using CSAPI.Common.Auth;
 using CSAPI.Common;
 using CSAPI.Feature.AuthMonolithicFeature;
 using CSAPI.Feature.BookingFeature;
+using CSAPI.Feature.LocationFeature;
+using CSAPI.Feature.LocationFromLocationFeature;
 using CSAPI.Feature.CourtFeature;
 using CSAPI.Feature.CustomerProfileFeature;
 using CSAPI.Feature.OrganizationFeature;
@@ -61,6 +63,8 @@ public static class Endpoints
         var endpoints = app.MapGroup(KConstant.ApiName).AddEndpointFilter<RequestLoggingFilter>().WithOpenApi();
 
         endpoints.MapAuthEndpoints();
+        endpoints.MapLocationEndpoints();
+        endpoints.MapLocationFromLocationEndpoints();
         endpoints.MapBookingEndpoints();
         endpoints.MapCourtEndpoints();
         endpoints.MapCustomerProfileEndpoints();
@@ -80,6 +84,26 @@ public static class Endpoints
             .MapEndpoint<SignUp>()
             .MapEndpoint<Login>()
             .MapEndpoint<RefreshToken>()
+        ;
+    }
+
+    static void MapLocationEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ILocationFeature)}").WithTags(nameof(ILocationFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertLocation>()
+            .MapEndpoint<GetLocation>()
+        ;
+    }
+
+    static void MapLocationFromLocationEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ILocationFromLocationFeature)}").WithTags(nameof(ILocationFromLocationFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertLocationFromLocation>()
+            .MapEndpoint<GetLocationFromLocation>()
         ;
     }
 
