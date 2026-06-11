@@ -6,6 +6,14 @@ using CSAPI.Common.Auth;
 using CSAPI.Common;
 using CSAPI.Feature.AuthMonolithicFeature;
 using CSAPI.Feature.BookingFeature;
+using CSAPI.Feature.CourtFeature;
+using CSAPI.Feature.CustomerProfileFeature;
+using CSAPI.Feature.OrganizationFeature;
+using CSAPI.Feature.PricingFeature;
+using CSAPI.Feature.SlotFeature;
+using CSAPI.Feature.TenantFeature;
+using CSAPI.Feature.UserFeature;
+using CSAPI.Feature.VenueFeature;
 
 namespace CSAPI;
 
@@ -53,7 +61,15 @@ public static class Endpoints
         var endpoints = app.MapGroup(KConstant.ApiName).AddEndpointFilter<RequestLoggingFilter>().WithOpenApi();
 
         endpoints.MapAuthEndpoints();
-        endpoints.MapBookingEndpoints();        
+        endpoints.MapBookingEndpoints();
+        endpoints.MapCourtEndpoints();
+        endpoints.MapCustomerProfileEndpoints();
+        endpoints.MapOrganizationEndpoints();
+        endpoints.MapPricingEndpoints();
+        endpoints.MapSlotEndpoints();
+        endpoints.MapTenantEndpoints();
+        endpoints.MapUserEndpoints();
+        endpoints.MapVenueEndpoints();
     }
 
     static void MapAuthEndpoints(this IEndpointRouteBuilder app)
@@ -74,6 +90,86 @@ public static class Endpoints
         endpoints.MapPublicGroup()
             .MapEndpoint<UpsertBooking>()
             .MapEndpoint<GetBooking>()
+        ;
+    }
+
+    static void MapCourtEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ICourtFeature)}").WithTags(nameof(ICourtFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertCourt>()
+            .MapEndpoint<GetCourt>()
+        ;
+    }
+
+    static void MapCustomerProfileEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ICustomerProfileFeature)}").WithTags(nameof(ICustomerProfileFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertCustomerProfile>()
+            .MapEndpoint<GetCustomerProfile>()
+        ;
+    }
+
+    static void MapOrganizationEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IOrganizationFeature)}").WithTags(nameof(IOrganizationFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertOrganization>()
+            .MapEndpoint<GetOrganization>()
+        ;
+    }
+
+    static void MapPricingEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IPricingFeature)}").WithTags(nameof(IPricingFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertPricing>()
+            .MapEndpoint<GetPricing>()
+        ;
+    }
+
+    static void MapSlotEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ISlotFeature)}").WithTags(nameof(ISlotFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertSlot>()
+            .MapEndpoint<GetSlot>()
+        ;
+    }
+
+    static void MapTenantEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(ITenantFeature)}").WithTags(nameof(ITenantFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertTenant>()
+            .MapEndpoint<GetTenant>()
+        ;
+    }
+
+    static void MapUserEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IUserFeature)}").WithTags(nameof(IUserFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertUser>()
+            .MapEndpoint<GetUser>()
+        ;
+    }
+
+    static void MapVenueEndpoints(this IEndpointRouteBuilder app)
+    {
+        var endpoints = app.MapGroup($"/{nameof(IVenueFeature)}").WithTags(nameof(IVenueFeature));
+
+        endpoints.MapPublicGroup()
+            .MapEndpoint<UpsertVenue>()
+            .MapEndpoint<GetVenue>()
         ;
     }
 }
